@@ -1,22 +1,51 @@
-﻿#include "DL_RobotConfig/DocumentTut.h"
+#include "DL_RobotConfig/DocumentTut.h"
+#include "DL_RobotConfig/DL_RobotContext.h"
 #include "dlModelContext/DL_Modeler.h"
 
+#include <QApplication>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QApplication>
 
-#include <TopoDS_Shape.hxx>
 #include <AIS_Shape.hxx>
+#include <TopoDS_Shape.hxx>
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
 
 DocumentTut::DocumentTut( const int theIndex, ApplicationCommonWindow* app )
-: DocumentCommon( theIndex, app )
+: DocumentCommon( theIndex, app ),
+  myLastOpenResult(0)
 {
 }
 
 DocumentTut::~DocumentTut()
 {
+}
+
+DL_RobotContext* DocumentTut::getRobot()
+{
+	Handle(AIS_InteractiveContext) aContext = getContext();
+	if (!myRobotContext)
+	{
+		myRobotContext.reset(new DL_RobotContext(aContext));
+	}
+	else
+	{
+		myRobotContext->setContext(aContext);
+	}
+	return myRobotContext.get();
+}
+
+int DocumentTut::openRobot(QWidget* theParent)
+{
+	QApplication::setOverrideCursor(Qt::WaitCursor);
+	const int aLoadResult = getRobot()->loadRobotDynamic(theParent);
+	if (0 != aLoadResult)
+	{
+		myLastOpenResult = aLoadResult;
+		fitAll();
+	}
+	QApplication::restoreOverrideCursor();
+	return aLoadResult;
 }
 
 void DocumentTut::makeBottle()
@@ -40,11 +69,7 @@ void DocumentTut::makeBottle()
 	getContext()->SetMaterial (AISBottle, Graphic3d_NameOfMaterial_Gold, Standard_False);
 	getContext()->SetDisplayMode(AISBottle, 1, Standard_False);
 	getContext()->Display(AISBottle, Standard_False);	
-	//const Handle(AIS_InteractiveObject)& anIOAISBottle = AISBottle;
-	//getContext()->SetSelected(anIOAISBottle,Standard_False);
 
 	fitAll();
 	QApplication::restoreOverrideCursor();
 }
-
-

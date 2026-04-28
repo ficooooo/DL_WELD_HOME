@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE TS><TS version="1.1" language="zh_CN">
+<context>
+    <name>QObject</name>
+    <message>
+        <source>TIT_SAMPLE</source>
+        <translation>DL_RobotConfig</translation>
+    </message>
+    <message>
+        <source>INF_MAKE_BOTTLE</source>
+        <translation>正在生成示例模型...</translation>
+    </message>
+    <message>
+        <source>TBR_MAKEBOT</source>
+        <translation>示例模型</translation>
+    </message>
+    <message>
+        <source>MNU_ROBOT_OPEN</source>
+        <translation>&amp;Open...</translation>
+    </message>
+    <message>
+        <source>TBR_ROBOT_OPEN</source>
+        <translation>打开/载入机器人或总装 STEP</translation>
+    </message>
+    <message>
+        <source>INF_ROBOT_OPEN</source>
+        <translation>选择 Top.xml 载入机器人，或选择 STEP 预览总装</translation>
+    </message>
+    <message>
+        <source>INF_DONE</source>
+        <translation>完成</translation>
+    </message>
+    <message>
+        <source>INF_JOINT_FWORD</source>
+        <translation>当前关节前进</translation>
+    </message>
+    <message>
+        <source>TBR_JOINT_FWORD</source>
+        <translation>前进</translation>
+    </message>
+    <message>
+        <source>INF_JOINT_BWORD</source>
+        <translation>当前关节后退</translation>
+    </message>
+    <message>
+        <source>TBR_JOINT_BWORD</source>
+        <translation>后退</translation>
+    </message>
+    <message>
+        <source>INF_JOINT_SELECT</source>
+        <translation>循环选择关节</translation>
+    </message>
+    <message>
+        <source>TBR_JOINT_SELECT</source>
+        <translation>选择关节</translation>
+    </message>
+    <message>
+        <source>INF_ROBOT_RESET</source>
+        <translation>重置机器人所有关节为 0</translation>
+    </message>
+    <message>
+        <source>TBR_ROBOT_RESET</source>
+        <translation>重置机器人</translation>
+    </message>
+    <message>
+        <source>TBR_ROBOT_CALC</source>
+        <translation>验证计算</translation>
+    </message>
+    <message>
+        <source>INF_ROBOT_CALC</source>
+        <translation>执行正逆解闭环计算并对比误差</translation>
+    </message>
+    <message>
+        <source>TBR_ROBOT_DISAS</source>
+        <translation>拆分机械臂</translation>
+    </message>
+    <message>
+        <source>INF_ROBOT_DISAS</source>
+        <translation>拆分、导出、显示机械臂</translation>
+    </message>
+    <message>
+        <source>TBR_ROBOT_WRITE</source>
+        <translation>编写 XML</translation>
+    </message>
+    <message>
+        <source>INF_ROBOT_WRITE</source>
+        <translation>输入参数并生成机械臂 XML 文件</translation>
+    </message>
+    <message>
+        <source>TIT_ABOUT</source>
+        <translation>DL_RobotConfig</translation>
+    </message>
+</context>
+</TS>

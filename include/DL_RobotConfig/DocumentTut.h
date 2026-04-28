@@ -2,10 +2,11 @@
 #define DOCUMENTTUT_H
 
 #include "dlOcctMdiFrame\DocumentCommon.h"
-//#include <Geom_BSplineSurface.hxx>
 
-//class SurfConstruction;
+#include <memory>
+
 class ApplicationCommon;
+class DL_RobotContext;
 
 class DocumentTut : public DocumentCommon
 {
@@ -16,9 +17,13 @@ public:
 	~DocumentTut();
 
 	void                           makeBottle();
+	int                            openRobot(QWidget* theParent);
+	DL_RobotContext*               getRobot();
+	int                            lastOpenResult() const { return myLastOpenResult; }
 
-//private:
-	//SurfConstruction*			   mySurfConstructor;
+private:
+	std::unique_ptr<DL_RobotContext> myRobotContext;
+	int                              myLastOpenResult;
 };
 
 #endif
