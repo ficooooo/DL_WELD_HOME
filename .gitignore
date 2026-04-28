@@ -1,0 +1,38 @@
+# Build outputs
+/output/
+/temp/
+/make/build-*/
+**/debug/
+**/release/
+**/obj/
+**/moc/
+**/Makefile
+**/Makefile.Debug
+**/Makefile.Release
+**/.qmake.stash
+**/*.obj
+**/*.pdb
+**/*.ilk
+**/*.exp
+**/*.lib
+**/*.dll
+**/*.exe
+
+# Local IDE/user files
+**/*.pro.user
+**/*.VC.db
+**/*.suo
+**/*.user
+
+# Third-party dependencies are restored/copied locally, not versioned here.
+/_3rdPartyImp/
+
+# Release exchange and backup archives
+/history_release_strage/
+*.zip
+*.7z
+*.rar
+
+# Autosaves and temporary files
+*.autosave
+~$*

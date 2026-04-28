@@ -1,0 +1,70 @@
+#ifndef DOCUMENTCOMMON_H
+#define DOCUMENTCOMMON_H
+
+#include "dllDeclaration.h"
+
+#include <QObject>
+#include <QList>
+
+#include <AIS_InteractiveContext.hxx>
+#include <V3d_Viewer.hxx>
+
+class ApplicationCommonWindow;
+class MDIWindow;
+
+class DCL_DL_OCCTMDI_FRAME__CLASS DocumentCommon : public QObject
+{
+	Q_OBJECT
+
+public:
+	DocumentCommon( const int, ApplicationCommonWindow* );
+	~DocumentCommon();
+
+	ApplicationCommonWindow*       	getApplication()	{	return myApp;		}
+	Handle(AIS_InteractiveContext) 	getContext()		{  	return myContext;	}
+	
+  	void                           	removeViews();
+	void                           	fitAll();
+signals:
+	void                           	sendCloseDocument( DocumentCommon* );
+
+public slots:
+	virtual void                   	onCloseMDIWindow( MDIWindow* );
+	virtual MDIWindow*            	onCreatMDIWindow();
+	
+public slots:	
+	virtual void                   	onMaterial();
+  	virtual void                   	onMaterial( int );
+	virtual void                   	onDelete();
+
+	void                           	onWireframe();
+	void                           	onShading();
+	void                           	onColor();
+	void                           	onTransparency();
+	void                           	onTransparency( int );
+
+private:
+  Handle(V3d_Viewer)             	Viewer (const Standard_ExtString theName,
+                                         const Standard_CString theDomain,
+                                         const Standard_Real theViewSize,
+                                         const V3d_TypeOfOrientation theViewProj,
+                                         const Standard_Boolean theComputedMode,
+                                         const Standard_Boolean theDefaultComputedMode );
+
+protected:
+	//所属应用
+	ApplicationCommonWindow*       	myApp;
+	//本次文档计数器
+	int                            	myIndex;
+	//新建文档+WIndow>New View 创建的MDIWindow
+	QList<MDIWindow*>              	myMDIWindows;
+	int                            	myNbMDIWindows;
+	//一个文档对应一个V3d_Viewer和一个AIS_InteractiveContext
+	//属于同一文档的不同Window显示的数据相同，但可各自显示
+	Handle(V3d_Viewer)             	myViewer;
+	Handle(AIS_InteractiveContext) 	myContext;
+};
+
+#endif
+
+
