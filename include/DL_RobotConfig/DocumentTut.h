@@ -20,10 +20,13 @@ public:
 	int                            openRobot(QWidget* theParent);
 	DL_RobotContext*               getRobot();
 	int                            lastOpenResult() const { return myLastOpenResult; }
+	int                            currentJointIndex() const { return myCurrentJointIndex; }
+	void                           setCurrentJointIndex(const int theIndex) { myCurrentJointIndex = theIndex; }
 
 private:
 	std::unique_ptr<DL_RobotContext> myRobotContext;
 	int                              myLastOpenResult;
+	int                              myCurrentJointIndex;
 };
 
 #endif

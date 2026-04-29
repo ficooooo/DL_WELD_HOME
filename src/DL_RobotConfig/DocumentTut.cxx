@@ -13,7 +13,8 @@
 
 DocumentTut::DocumentTut( const int theIndex, ApplicationCommonWindow* app )
 : DocumentCommon( theIndex, app ),
-  myLastOpenResult(0)
+  myLastOpenResult(0),
+  myCurrentJointIndex(-1)
 {
 }
 

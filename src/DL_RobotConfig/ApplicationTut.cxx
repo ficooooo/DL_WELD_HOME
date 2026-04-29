@@ -213,6 +213,7 @@ void ApplicationTut::onFileOpen()
 	{
 		nMaxJoint_Count = aLoadResult;
 		nCurrentJoint_Index = 0;
+		aDocument->setCurrentJointIndex(nCurrentJoint_Index);
 		aDocument->getRobot()->setActiveJoint(nCurrentJoint_Index);
 		setRobotUiState(RobotUi_RobotLoaded);
 		showCurrentJointStatus();
@@ -223,6 +224,7 @@ void ApplicationTut::onFileOpen()
 	{
 		nMaxJoint_Count = 0;
 		nCurrentJoint_Index = 0;
+		aDocument->setCurrentJointIndex(-1);
 		setRobotUiState(RobotUi_StepPreview);
 		statusBar()->showMessage("Single STEP preview loaded. Disassemble and Write XML are enabled.", 5000);
 		return;
@@ -257,17 +259,27 @@ void ApplicationTut::onJointSelect()
 		return;
 	}
 
-	nCurrentJoint_Index++;
-	if (nCurrentJoint_Index == nMaxJoint_Count)
+	DocumentTut* aDocument = activeRobotDocument();
+	if (aDocument == NULL)
 	{
-		nCurrentJoint_Index = 0;
+		return;
 	}
 
-	DocumentTut* aDocument = activeRobotDocument();
-	if (aDocument != NULL)
+	int aJointIndex = aDocument->currentJointIndex();
+	if (aJointIndex < -1 || aJointIndex >= nMaxJoint_Count)
 	{
-		aDocument->getRobot()->setActiveJoint(nCurrentJoint_Index);
+		aJointIndex = -1;
 	}
+
+	++aJointIndex;
+	if (aJointIndex == nMaxJoint_Count)
+	{
+		aJointIndex = 0;
+	}
+
+	nCurrentJoint_Index = aJointIndex;
+	aDocument->setCurrentJointIndex(nCurrentJoint_Index);
+	aDocument->getRobot()->setActiveJoint(nCurrentJoint_Index);
 	showCurrentJointStatus();
 }
 
@@ -280,6 +292,13 @@ void ApplicationTut::onJointForward()
 	DocumentTut* aDocument = activeRobotDocument();
 	if (aDocument != NULL)
 	{
+		nCurrentJoint_Index = aDocument->currentJointIndex();
+		if (nCurrentJoint_Index < 0 || nCurrentJoint_Index >= nMaxJoint_Count)
+		{
+			nCurrentJoint_Index = 0;
+			aDocument->setCurrentJointIndex(nCurrentJoint_Index);
+			aDocument->getRobot()->setActiveJoint(nCurrentJoint_Index);
+		}
 		aDocument->getRobot()->moveJoint(nCurrentJoint_Index, 1);
 	}
 }
@@ -293,6 +312,13 @@ void ApplicationTut::onJointBackward()
 	DocumentTut* aDocument = activeRobotDocument();
 	if (aDocument != NULL)
 	{
+		nCurrentJoint_Index = aDocument->currentJointIndex();
+		if (nCurrentJoint_Index < 0 || nCurrentJoint_Index >= nMaxJoint_Count)
+		{
+			nCurrentJoint_Index = 0;
+			aDocument->setCurrentJointIndex(nCurrentJoint_Index);
+			aDocument->getRobot()->setActiveJoint(nCurrentJoint_Index);
+		}
 		aDocument->getRobot()->moveJoint(nCurrentJoint_Index, -1);
 	}
 }
@@ -323,8 +349,17 @@ void ApplicationTut::onRobotWindowActivated(QMdiSubWindow* theWindow)
 	nMaxJoint_Count = (aDocument != NULL && aDocument->lastOpenResult() > 0)
 	                ? aDocument->lastOpenResult()
 	                : 0;
-	nCurrentJoint_Index = 0;
+	nCurrentJoint_Index = (aDocument != NULL) ? aDocument->currentJointIndex() : 0;
+	if (nMaxJoint_Count <= 0 || nCurrentJoint_Index < 0 || nCurrentJoint_Index >= nMaxJoint_Count)
+	{
+		nCurrentJoint_Index = 0;
+	}
 	setRobotUiState(stateForDocument(aDocument));
+	if (aDocument != NULL && nMaxJoint_Count > 0)
+	{
+		aDocument->setCurrentJointIndex(nCurrentJoint_Index);
+		showCurrentJointStatus();
+	}
 }
 
 void ApplicationTut::addContextItemInPopup(QMenu* menu)
