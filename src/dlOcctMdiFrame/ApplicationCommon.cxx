@@ -45,17 +45,6 @@ ApplicationCommonWindow::ApplicationCommonWindow()
 	stWs = new QMdiArea( this );
 	connect (stWs, SIGNAL (subWindowActivated (QMdiSubWindow *)),this, SLOT (onWindowActivated (QMdiSubWindow*)));
 	setCentralWidget( stWs );
-	
-	//主窗口基础菜单工具栏
-	createTBMUI_FileMisc();
-	createTBMUI_WindowPopup();
-	createTBMUI_ModelSkin();
-	createTBMUI_Raytrace();
-	createTBMUI_ViewOps();
-	createTBMUI_BackgroundSet();
-	
-	statusBar()->showMessage( QObject::tr("INF_READY"), 5000 );
-	resize( 1000, 700 );
 }
 
 ApplicationCommonWindow::~ApplicationCommonWindow()
@@ -92,6 +81,10 @@ DocumentCommon* ApplicationCommonWindow::onNewDoc()
 	DocumentCommon* aDoc = createNewDocument();
 	
 	MDIWindow* w = aDoc->onCreatMDIWindow();
+	
+	aDoc->initScene();
+	w->getWndView()->fitAll();
+	
 	checkTBMUI(w);
 	
 	//Document检查到最后一个窗口被关闭，发出消息App关闭自己

@@ -10,7 +10,17 @@
 ApplicationTut::ApplicationTut()
     : ApplicationCommonWindow( )
 {
+  createTBMUI_FileMisc();
+  createTBMUI_WindowPopup();
+  createTBMUI_ModelSkin();
+  createTBMUI_Raytrace();
+  createTBMUI_ViewOps();
+  createTBMUI_BackgroundSet();
+
   createTBMUI_MakeBottle();
+
+  statusBar()->showMessage( QObject::tr("INF_READY"), 5000 );
+  resize( 1000, 700 );
 }
 
 ApplicationTut::~ApplicationTut()

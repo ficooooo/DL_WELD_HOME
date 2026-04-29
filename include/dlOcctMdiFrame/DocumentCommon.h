@@ -8,6 +8,7 @@
 
 #include <AIS_InteractiveContext.hxx>
 #include <V3d_Viewer.hxx>
+#include <AIS_Shape.hxx>
 
 class ApplicationCommonWindow;
 class MDIWindow;
@@ -15,7 +16,12 @@ class MDIWindow;
 class DCL_DL_OCCTMDI_FRAME__CLASS DocumentCommon : public QObject
 {
 	Q_OBJECT
-
+public:	
+	//
+	enum SCENE_COMPNENTS_ID_LIST	{ DL_SCENE_VIEWCUBE=0
+										,DL_SCENE_FLOOR=1
+										,DL_SCENE_FLOOR_THIN=2
+										,DL_VIEWOBJECT_COUNT };		//在派生类中继续定义所用到的对象
 public:
 	DocumentCommon( const int, ApplicationCommonWindow* );
 	~DocumentCommon();
@@ -25,13 +31,21 @@ public:
 	
   	void                           	removeViews();
 	void                           	fitAll();
+
+protected:
+	QList<Handle(AIS_InteractiveObject)>	SCENE_COMPNENTS_LIST;  
+	
 signals:
 	void                           	sendCloseDocument( DocumentCommon* );
 
 public slots:
 	virtual void                   	onCloseMDIWindow( MDIWindow* );
 	virtual MDIWindow*            	onCreatMDIWindow();
-	
+public:
+	virtual int						getFloorSize()				{	return 4;	}//4mX4m
+	virtual int						getFloorGridSizeFactor()	{	return -1;	}//2^-1 *1000 500mm  
+	virtual void					initScene();	
+	virtual void					clearScene();
 public slots:	
 	virtual void                   	onMaterial();
   	virtual void                   	onMaterial( int );
@@ -44,7 +58,7 @@ public slots:
 	void                           	onTransparency( int );
 
 private:
-  Handle(V3d_Viewer)             	Viewer (const Standard_ExtString theName,
+  	Handle(V3d_Viewer)             	Viewer (const Standard_ExtString theName,
                                          const Standard_CString theDomain,
                                          const Standard_Real theViewSize,
                                          const V3d_TypeOfOrientation theViewProj,

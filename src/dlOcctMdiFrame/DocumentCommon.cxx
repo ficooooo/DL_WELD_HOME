@@ -2,10 +2,12 @@
 #include "dlOcctMdiFrame/ApplicationCommon.h"
 #include "dlOcctMdiFrame/MDIWindow.h"
 #include "dlOcctMdiFrame/View.h"
+#include "dlOcctMdiFrame/DL_AIS_Scene_Floor.h"
 
 #include <QStatusBar>
 
 
+#include <AIS_ViewCube.hxx>
 #include <Aspect_DisplayConnection.hxx>
 #include <AIS_InteractiveObject.hxx>
 #include <Graphic3d_NameOfMaterial.hxx>
@@ -57,7 +59,38 @@ DocumentCommon::DocumentCommon( const int theIndex, ApplicationCommonWindow* app
 
 DocumentCommon::~DocumentCommon()
 {
+	SCENE_COMPNENTS_LIST.clear();
 	printf("DocumentCommon::~DocumentCommon()\n");
+}
+
+void DocumentCommon::initScene()
+{
+	Handle(AIS_ViewCube) VC = new AIS_ViewCube();
+	SCENE_COMPNENTS_LIST.insert(DL_SCENE_VIEWCUBE,VC);
+	myContext->Display(VC, Standard_False);
+	
+	int floorSize= getFloorSize();
+	int floorGridFactor = getFloorGridSizeFactor();
+	std::cout<<floorSize<<floorGridFactor;
+	Handle(AIS_InteractiveObject) floor = new DL_AIS_Scene_Floor(floorSize,floorGridFactor,Quantity_NOC_GRAY58,3);
+	SCENE_COMPNENTS_LIST.insert(DL_SCENE_FLOOR,floor);
+	myContext->Display(floor,0,-1, Standard_False);
+	
+	Handle(AIS_InteractiveObject) floor1 = new DL_AIS_Scene_Floor(floorSize,floorGridFactor-2,Quantity_NOC_GRAY18,1);
+	SCENE_COMPNENTS_LIST.insert(DL_SCENE_FLOOR_THIN,floor1);
+	myContext->Display(floor1,0,-1, Standard_False);
+}
+
+void DocumentCommon::clearScene()
+{
+	int totalCount = SCENE_COMPNENTS_LIST.size();
+	for (int i = DL_VIEWOBJECT_COUNT; i < totalCount ; ++i)
+	{
+		Handle(AIS_InteractiveObject) obj = SCENE_COMPNENTS_LIST.takeAt(i);
+		myContext->Remove(obj, Standard_False);
+	}
+	
+	fitAll();
 }
 
 /*
@@ -73,6 +106,7 @@ void QMdiSubWindow::setWidget(QWidget *widget)
 	QMdiSubWindow takes temporary ownership of widget; you do not have to delete it. 
 	Any existing internal widget will be removed and reparented to the root window.
 */
+
 MDIWindow* DocumentCommon::onCreatMDIWindow()
 {
   	QMdiArea* ws = myApp->getMdiArea();

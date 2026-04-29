@@ -72,7 +72,7 @@ public slots:
 	//窗口中对象拾取状态改变时的动作
   	virtual void                    onSelectionChanged();	
 	//各种操作切换窗口时操作
-	void                            onWindowActivated ( QMdiSubWindow * w );
+	virtual void                    onWindowActivated ( QMdiSubWindow * w );
 protected:  
 	//Toolbar+Action数组管理   TBMUI   ToolBar+Menu UI
 	//基础菜单 文件窗口管理
@@ -136,7 +136,7 @@ protected:
 	void 							createTBMUI_BackgroundSet_init();
 	//-----------对象选择状态（有选中，无选中）+ 窗口切换时的菜单 工具栏管理------------------------
 	//第一个窗口和关闭全部窗口后的菜单工具栏管理（显示、隐藏 功能菜单工具栏）
-	void                    		checkTBMUI(MDIWindow* w);	
+	virtual void                    checkTBMUI(MDIWindow* w);	
 	//继承类自己需要管理的菜单按钮，在子类实现
 	virtual void					checkTBMUIX(bool show)=0;
 	//针对各分组的检查 显示隐藏控制

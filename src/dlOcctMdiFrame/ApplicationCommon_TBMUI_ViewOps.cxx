@@ -22,7 +22,6 @@ void ApplicationCommonWindow::createTBMUI_ViewOps()
 #define VIEW_ACTIONX(ID,MAPID,_SLOT)\
 	VIEW_ACTION(ICON_VIEW_##ID,MNU_##ID,TBR_##ID,MAPID,onTBMUI_ViewOps_##_SLOT)
 	
-	
 void ApplicationCommonWindow::createTBMUI_ViewOps_init()
 {
   	QString dir = ApplicationCommonWindow::getResourceDir() + QString( "/" );

@@ -75,5 +75,9 @@ SOURCES	+= ../../src/dlOcctMdiFrame/ApplicationCommon_TBMUI_BackgroundSet.cxx
 HEADERS	+= ../../include/dlOcctMdiFrame/MDIWindow.h
 SOURCES	+= ../../src/dlOcctMdiFrame/MDIWindow.cxx
 
+#2026/4/29 10:03:56 地板网格类
+HEADERS	+= ../../include/dlOcctMdiFrame/DL_AIS_Scene_Floor.h
+SOURCES	+= ../../src/dlOcctMdiFrame/DL_AIS_Scene_Floor.cxx
+
 #########################以上添加头文件和源文件############################ 
 

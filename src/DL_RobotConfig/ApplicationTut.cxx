@@ -25,8 +25,19 @@ ApplicationTut::ApplicationTut()
 	  nMaxJoint_Count(0),
 	  myRobotUiState(RobotUi_NoDocument)
 {
+	createTBMUI_FileMisc();
+	createTBMUI_WindowPopup();
+	createTBMUI_ModelSkin();
+	createTBMUI_Raytrace();
+	createTBMUI_ViewOps();
+	createTBMUI_BackgroundSet();
+
 	createFileOpenAction();
 	createTBMUI_RobotOps();
+
+	statusBar()->showMessage(QObject::tr("INF_READY"), 5000);
+	resize(1000, 700);
+
 	connect(getMdiArea(), SIGNAL(subWindowActivated(QMdiSubWindow*)),
 	        this, SLOT(onRobotWindowActivated(QMdiSubWindow*)));
 	updateRobotActions();
