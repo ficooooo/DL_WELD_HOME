@@ -17,7 +17,7 @@ DEFINES		+= EXPORT_OCCTUTORIAL
 DESTDIR	 	 = $$(DL_DESTDIR) 
 OBJECTS_DIR	 = ./obj 
 MOC_DIR 	 = ./moc  
-CONFIG		+= release warn_on  
+CONFIG		+= release warn_on no_batch  
 INCLUDEPATH += $$(DL_INCLUDE_PATH)  
 ###所有核心DLL工程pro此部分相同############################################ 
 ########################################################################### 
@@ -51,4 +51,9 @@ SOURCES	+= ../../src/occtutorial/ApplicationTut.cxx
 
 HEADERS	+= ../../include/occtutorial/DocumentTut.h 
 SOURCES	+= ../../src/occtutorial/DocumentTut.cxx 
+
+HEADERS	+= ../../include/occtutorial/DLMUI_Bottle.h 
+SOURCES	+= ../../src/occtutorial/DLMUI_Bottle.cxx 
+
 #########################以上添加头文件和源文件############################ 
+

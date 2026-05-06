@@ -19,7 +19,7 @@ DocumentTut::~DocumentTut()
 {
 }
 
-void DocumentTut::makeBottle()
+Handle(AIS_Shape) DocumentTut::makeBottle()
 {
 	Handle(AIS_InteractiveContext) aCtx = getContext();
 
@@ -37,14 +37,16 @@ void DocumentTut::makeBottle()
 	TopoDS_Shape aBottle=MakeBottle(50,70,30);
 	Handle(AIS_Shape) AISBottle=new AIS_Shape(aBottle);
 	
+	SCENE_COMPNENTS_LIST.insert(DL_BOTTLE,AISBottle);
+	
 	getContext()->SetMaterial (AISBottle, Graphic3d_NameOfMaterial_Gold, Standard_False);
 	getContext()->SetDisplayMode(AISBottle, 1, Standard_False);
 	getContext()->Display(AISBottle, Standard_False);	
 	//const Handle(AIS_InteractiveObject)& anIOAISBottle = AISBottle;
 	//getContext()->SetSelected(anIOAISBottle,Standard_False);
-
+	
 	fitAll();
 	QApplication::restoreOverrideCursor();
+		
+	return AISBottle;
 }
-
-

@@ -7,21 +7,20 @@ class ApplicationTut: public ApplicationCommonWindow
 {
     Q_OBJECT
 public:
+	enum DLModuleUIEntryIdsX	{
+									//派生类继续扩展此enum
+									DLMUI_BottleId=DLMUI_Count		
+								};
+public:
 	ApplicationTut();
 	~ApplicationTut();
+public:
+	virtual DocumentCommon*         createNewDocument();
 
-private:
-	QToolBar*			myTBMUI_MakeBottle;
-public:	
-	virtual void		checkTBMUIX(bool show);
-public slots:
-	void				onTBMUI_MakeBottle();
-
-private:
-	void              	createTBMUI_MakeBottle();
 public:
 	virtual void 		addContextItemInPopup(QMenu *);
-	virtual	void		Popup( const int x, const int y );
+	virtual	void		popup( const int x, const int y );
 };
 
 #endif
+
