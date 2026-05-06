@@ -21,7 +21,8 @@ public:
   	virtual void Compute (const Handle(PrsMgr_PresentationManager)& thePrsMgr,
                         const Handle(Prs3d_Presentation)& thePrs,
                         const Standard_Integer theMode) override;
- 	void SelectMgr_SelectableObject::ComputeSelection(const opencascade::handle<SelectMgr_Selection> &,const Standard_Integer) {}
+  	virtual void ComputeSelection(const Handle(SelectMgr_Selection)&,
+                                  const Standard_Integer) override {}
   	virtual bool AcceptDisplayMode (const Standard_Integer theMode)  
   	{ 
   		return theMode==0; 

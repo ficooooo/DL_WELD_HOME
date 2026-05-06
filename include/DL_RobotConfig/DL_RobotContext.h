@@ -17,6 +17,7 @@
 class QWidget;
 class gp_Dir;
 class gp_Pnt;
+class DocumentTut;
 
 namespace rl
 {
@@ -34,7 +35,8 @@ class NloptInverseKinematics;
 class DL_RobotContext
 {
 public:
-    explicit DL_RobotContext(const Handle(AIS_InteractiveContext)& theContext);
+    explicit DL_RobotContext(DocumentTut* theDocument,
+                             const Handle(AIS_InteractiveContext)& theContext);
     ~DL_RobotContext();
 //--------------------------------------------------------------------------------------------
 private://两个库共用的数据
@@ -95,6 +97,8 @@ public:
     int               getRodShapeCount() const;
     // 按索引访问单个杆件显示对象。
     Handle(AIS_Shape) getRodShape(int theIndex) const;
+    // 只清当前文档里的机器人运行时状态与对象引用，不销毁文档默认场景。
+    void              clearSceneState();
 //--------------------------------------------------------------------------------------------
 private://rl计算模型  实现参考 main_mdl_inv_ok.cpp
     //std::shared_ptr 用法见 std_shared_ptr.pptx
@@ -165,8 +169,6 @@ public:
 
 
 private:
-    // 移除当前机器人相关显示对象，并重置内部状态。
-    void                  clearRobotPresentation();
     // 根据 m_activeJointIndex 刷新当前选中关节的显示颜色。
     void                  updateJointSelectionVisual();
     // 更新原点到末端的辅助轨迹线。
@@ -185,6 +187,7 @@ private:
     static QString        findSampleImage(const char* theFileName);
 
 private:
+    DocumentTut* m_document;
     // 由 robot.xml 抽取得到的关键几何参数，单位为 mm，仅供 OCC 端装配显示使用。
     double m_paramR;
     double m_paramH;
@@ -199,6 +202,7 @@ private:
 public:
     // 视图切换时刷新当前 AIS 上下文。
     void setContext(const Handle(AIS_InteractiveContext)& theContext) { m_context = theContext; }
+    void setDocument(DocumentTut* theDocument) { m_document = theDocument; }
 };
 
 #endif

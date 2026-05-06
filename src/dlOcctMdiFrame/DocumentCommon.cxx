@@ -3,6 +3,7 @@
 #include "dlOcctMdiFrame/MDIWindow.h"
 #include "dlOcctMdiFrame/View.h"
 #include "dlOcctMdiFrame/DL_AIS_Scene_Floor.h"
+#include "dlOcctMdiFrame/DLModuleUIEntry.h"
 
 #include <QStatusBar>
 
@@ -47,6 +48,8 @@ DocumentCommon::DocumentCommon( const int theIndex, ApplicationCommonWindow* app
 	myIndex( theIndex ),
 	myNbMDIWindows( 0 )
 {
+	myDLModuleId = ApplicationCommonWindow::DLMUI_FileWndId;
+		
 	TCollection_ExtendedString a3DName ("Visu3D");
 	
 	myViewer = Viewer (a3DName.ToExtString(), "", 1000.0, V3d_XposYnegZpos, Standard_True, Standard_True);
@@ -71,7 +74,6 @@ void DocumentCommon::initScene()
 	
 	int floorSize= getFloorSize();
 	int floorGridFactor = getFloorGridSizeFactor();
-	std::cout<<floorSize<<floorGridFactor;
 	Handle(AIS_InteractiveObject) floor = new DL_AIS_Scene_Floor(floorSize,floorGridFactor,Quantity_NOC_GRAY58,3);
 	SCENE_COMPNENTS_LIST.insert(DL_SCENE_FLOOR,floor);
 	myContext->Display(floor,0,-1, Standard_False);
@@ -83,10 +85,9 @@ void DocumentCommon::initScene()
 
 void DocumentCommon::clearScene()
 {
-	int totalCount = SCENE_COMPNENTS_LIST.size();
-	for (int i = DL_VIEWOBJECT_COUNT; i < totalCount ; ++i)
+	for (int i = DL_VIEWOBJECT_COUNT; i < getNbSceneComponents() ; ++i)
 	{
-		Handle(AIS_InteractiveObject) obj = SCENE_COMPNENTS_LIST.takeAt(i);
+		Handle(AIS_InteractiveObject) obj = SCENE_COMPNENTS_LIST.take(i);
 		myContext->Remove(obj, Standard_False);
 	}
 	
@@ -134,20 +135,21 @@ MDIWindow* DocumentCommon::onCreatMDIWindow()
   	return w;
 }
 
-//关闭最后一个时执行删除文档操作
+//MDIWindow::close 窗口关闭
+//File菜单>>Close  onCloseMDIWindow 调用activeSubWindow()->close();
+//移除当前窗口，关闭当前文档的最后一个窗口时执行删除文档操作
 void DocumentCommon::onCloseMDIWindow(MDIWindow* theView)
 {
     myMDIWindows.removeOne(theView);
     ApplicationCommonWindow::getMdiArea()->removeSubWindow(theView);
     if( myMDIWindows.count() == 0 )
         emit sendCloseDocument( this );
-}
-
-void DocumentCommon::removeViews()
-{
-	if( myMDIWindows.count() >0 )
-	{
-		myMDIWindows.clear();
+    
+    if(myApp->getNbWndView()<1)    
+    {	
+   		printf("--------------------DocumentCommon::onCloseMDIWindow--------------------\n");
+    	DLModuleUIEntry::checkWindowActionAll(DLModuleUIEntry::CLOSE_VIEW,theView);    
+    	printf("--------------------DocumentCommon::onCloseMDIWindow--------------------\n");
 	}
 }
 

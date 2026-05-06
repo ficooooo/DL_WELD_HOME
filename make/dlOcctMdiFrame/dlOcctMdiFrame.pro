@@ -17,8 +17,8 @@ DEFINES		+= EXPORT_DL_OCCTMDI_FRAME
 DESTDIR	 	 = $$(DL_DESTDIR)
 OBJECTS_DIR	 = ./obj
 MOC_DIR 	 = ./moc 
-CONFIG		+= release warn_on 
-INCLUDEPATH += $$(DL_INCLUDE_PATH) 
+CONFIG      += release warn_on no_batch
+INCLUDEPATH += $$(DL_INCLUDE_PATH)
 
 ###所有核心DLL工程pro此部分相同############################################ 
 ########################################################################### 
@@ -61,23 +61,34 @@ SOURCES	+= ../../src/dlOcctMdiFrame/DocumentCommon.cxx
 HEADERS	+= ../../include/dlOcctMdiFrame/ApplicationCommon.h
 #和DocumentCommon.cxx 实现多文档/窗口的管理：创建，关闭，切换
 SOURCES	+= ../../src/dlOcctMdiFrame/ApplicationCommon.cxx
-#与窗口创建关闭切换，程序退出相关的基础菜单工具栏
-SOURCES	+= ../../src/dlOcctMdiFrame/ApplicationCommon_TBMUI_FileMisc.cxx
-#显示(线框，颜色，材质.... +对象删除)控制工具栏和右键弹出菜单
-SOURCES	+= ../../src/dlOcctMdiFrame/ApplicationCommon_TBMUI_ModelSkin.cxx
-#光线追踪按钮
-SOURCES	+= ../../src/dlOcctMdiFrame/ApplicationCommon_TBMUI_Raytrace.cxx
-#视角，鼠标控制工具栏
-SOURCES	+= ../../src/dlOcctMdiFrame/ApplicationCommon_TBMUI_ViewOps.cxx
-#背景设置 右键菜单， 系统右键菜单配置入口
-SOURCES	+= ../../src/dlOcctMdiFrame/ApplicationCommon_TBMUI_BackgroundSet.cxx
 
 HEADERS	+= ../../include/dlOcctMdiFrame/MDIWindow.h
 SOURCES	+= ../../src/dlOcctMdiFrame/MDIWindow.cxx
 
-#2026/4/29 10:03:56 地板网格类
+#2026/4/29 10:03:56 地板网格类,展示如何用基本元素构建可显示对象
 HEADERS	+= ../../include/dlOcctMdiFrame/DL_AIS_Scene_Floor.h
 SOURCES	+= ../../src/dlOcctMdiFrame/DL_AIS_Scene_Floor.cxx
 
+#2026/5/1 11:00:53  按工具栏（菜单）组织功能模块,popup菜单管理
+HEADERS	+= ../../include/dlOcctMdiFrame/DLModuleUIEntry.h
+SOURCES	+= ../../src/dlOcctMdiFrame/DLModuleUIEntry.cxx
+#与窗口创建关闭切换，程序退出相关的基础菜单工具栏
+HEADERS	+= ../../include/dlOcctMdiFrame/DLMUI_FileWnd.h
+SOURCES	+= ../../src/dlOcctMdiFrame/DLMUI_FileWnd.cxx
+#视角，鼠标控制
+HEADERS	+= ../../include/dlOcctMdiFrame/DLMUI_ViewOps.h
+SOURCES	+= ../../src/dlOcctMdiFrame/DLMUI_ViewOps.cxx
+#显示(线框，颜色，材质.... +对象删除)控制工具栏和右键弹出菜单
+HEADERS	+= ../../include/dlOcctMdiFrame/DLMUI_ModelSkin.h
+SOURCES	+= ../../src/dlOcctMdiFrame/DLMUI_ModelSkin.cxx
+#光线追踪按钮
+HEADERS	+= ../../include/dlOcctMdiFrame/DLMUI_Raytrace.h
+SOURCES	+= ../../src/dlOcctMdiFrame/DLMUI_Raytrace.cxx
+#背景设置
+HEADERS	+= ../../include/dlOcctMdiFrame/DLMUI_BackgroundSet.h
+SOURCES	+= ../../src/dlOcctMdiFrame/DLMUI_BackgroundSet.cxx
+
 #########################以上添加头文件和源文件############################ 
+
+
 

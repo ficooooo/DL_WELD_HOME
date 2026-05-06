@@ -4,7 +4,7 @@
 #include "dllDeclaration.h"
 
 #include <QObject>
-#include <QList>
+#include <QMap>
 
 #include <AIS_InteractiveContext.hxx>
 #include <V3d_Viewer.hxx>
@@ -12,6 +12,7 @@
 
 class ApplicationCommonWindow;
 class MDIWindow;
+
 
 class DCL_DL_OCCTMDI_FRAME__CLASS DocumentCommon : public QObject
 {
@@ -33,7 +34,11 @@ public:
 	void                           	fitAll();
 
 protected:
-	QList<Handle(AIS_InteractiveObject)>	SCENE_COMPNENTS_LIST;  
+	int 							myDLModuleId;
+	QMap<int,Handle(AIS_InteractiveObject)>	SCENE_COMPNENTS_LIST;
+public:	
+	virtual int						getNbSceneComponents()=0;
+	Handle(AIS_InteractiveObject)	getAISIO(int id)	  const {	return SCENE_COMPNENTS_LIST.value(id);	}
 	
 signals:
 	void                           	sendCloseDocument( DocumentCommon* );
@@ -77,6 +82,8 @@ protected:
 	//属于同一文档的不同Window显示的数据相同，但可各自显示
 	Handle(V3d_Viewer)             	myViewer;
 	Handle(AIS_InteractiveContext) 	myContext;
+	
+friend class ApplicationCommonWindow;
 };
 
 #endif

@@ -1,4 +1,6 @@
 ﻿#include "DL_RobotConfig/DL_RobotContext.h"
+#include "DL_RobotConfig/DocumentTut.h"
+
 
 #include <algorithm>
 #include <cmath>
@@ -298,10 +300,16 @@ CubicPolynomial buildJointCubicPolynomial(const double theStartAngle,
     return aPolynomial;
 }
 
+int rodSceneId(const int theIndex)
+{
+    return DocumentTut::DL_ROD_0 + theIndex;
 }
 
-DL_RobotContext::DL_RobotContext(const Handle(AIS_InteractiveContext)& theContext)
-: m_context(theContext), m_paramR(0.0), m_paramH(0.0), m_paramL2(0.0), m_paramS(0.0),
+}
+
+DL_RobotContext::DL_RobotContext(DocumentTut* theDocument,
+                                 const Handle(AIS_InteractiveContext)& theContext)
+: m_context(theContext), m_document(theDocument), m_paramR(0.0), m_paramH(0.0), m_paramL2(0.0), m_paramS(0.0),
   m_paramL3(0.0), m_paramD(0.0), m_paramW(0.0), m_isPose1(true), m_activeJointIndex(-1)
 {
     for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i) { m_listJoints_angles[i] = 0.0; m_listJoints_angles0[i] = 0.0; }
@@ -459,21 +467,10 @@ QString DL_RobotContext::findSampleImage(const char* theFileName)
     return QString();
 }
 
-void DL_RobotContext::clearRobotPresentation()
+void DL_RobotContext::clearSceneState()
 {
-    if (!m_context.IsNull())
-    {
-        AIS_ListOfInteractive aObjects;
-        m_context->DisplayedObjects(aObjects);
-        for (AIS_ListIteratorOfListOfInteractive it(aObjects); it.More(); it.Next())
-        {
-            if (it.Value()->IsKind(STANDARD_TYPE(AIS_Shape))) m_context->Remove(it.Value(), Standard_False);
-        }
-        if (!m_endTrihedron.IsNull()) m_context->Remove(m_endTrihedron, Standard_False);
-        if (!m_traceLine.IsNull()) m_context->Remove(m_traceLine, Standard_False);
-    }
-
-    // 这里既清 OCC 显示，也清当前装载状态；但不主动清空入口 XML 路径，便于下次继续从同目录打开。
+    // 这里只清机器人运行时状态与对象句柄；实际显示对象的移除统一交给 DocumentTut::clearScene()
+    // 和场景表接口处理，这样框架的默认地板/视图盒才能和业务对象生命周期分离。
     for (int i = 0; i <= DL_ROBOT_JOINT_COUNT; ++i) m_listRods[i].Nullify();
     for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i) m_listJoints_angles[i] = 0.0;
     m_previewStepFileName.clear();
@@ -508,7 +505,10 @@ void DL_RobotContext::updateJointSelectionVisual()
 void DL_RobotContext::updateTraceLine()
 {
     if (m_context.IsNull() || m_endTrihedron.IsNull()) return;
-    if (!m_traceLine.IsNull()) m_context->Remove(m_traceLine, Standard_False);
+    if (m_document != NULL)
+        m_document->removeSceneObject(DocumentTut::DL_TRACE_LINE);
+    else if (!m_traceLine.IsNull())
+        m_context->Remove(m_traceLine, Standard_False);
     const gp_Trsf& aTransform = m_endTrihedron->Transformation();
     gp_Pnt aWorldPoint = m_endTrihedron->Component()->Location().Transformed(aTransform);
     TopoDS_Edge anEdge = BRepBuilderAPI_MakeEdge(gp_Pnt(0.0, 0.0, 0.0), aWorldPoint);
@@ -516,6 +516,8 @@ void DL_RobotContext::updateTraceLine()
     m_traceLine->SetColor(Quantity_NOC_GREEN);
     m_traceLine->SetWidth(3.0);
     m_context->Display(m_traceLine, Standard_False);
+    if (m_document != NULL)
+        m_document->registerSceneObject(DocumentTut::DL_TRACE_LINE, m_traceLine);
 }
 
 void DL_RobotContext::loadAISShapes()
@@ -533,7 +535,13 @@ void DL_RobotContext::loadAISShapes()
     }
 
     for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i) m_listRods[i]->AddChild(m_listRods[i + 1]);
-    for (int i = 0; i <= DL_ROBOT_JOINT_COUNT; ++i) { m_context->SetDisplayMode(m_listRods[i], 1, Standard_False); m_context->Display(m_listRods[i], Standard_False); }
+    for (int i = 0; i <= DL_ROBOT_JOINT_COUNT; ++i)
+    {
+        m_context->SetDisplayMode(m_listRods[i], 1, Standard_False);
+        m_context->Display(m_listRods[i], Standard_False);
+        if (m_document != NULL)
+            m_document->registerSceneObject(rodSceneId(i), m_listRods[i]);
+    }
 
     m_paramR = getFixedVal("fixed2", "x") * 1000.0;
     m_paramH = getFixedVal("fixed2", "z") * 1000.0;
@@ -582,6 +590,8 @@ void DL_RobotContext::loadAISShapes()
         m_listRods[DL_ROBOT_JOINT_COUNT]->AddChild(aTrihedron);
     }
     m_context->Display(aTrihedron, Standard_False);
+    if (m_document != NULL)
+        m_document->registerSceneObject(DocumentTut::DL_END_TRIHEDRON, aTrihedron);
 
     if (hasToolFile)
     {
@@ -869,7 +879,8 @@ int DL_RobotContext::loadRobotFromXml(const QString& theXmlFileName, QWidget* th
 
     try
     {
-        clearRobotPresentation();
+        if (m_document != NULL) m_document->clearScene();
+        else clearSceneState();
         const QString aResolvedToolFile = resolveHref(m_robotDirPath, aToolHref);
         const bool hasUsableTool = aToolEnabled && !aResolvedToolFile.isEmpty() && QFileInfo::exists(aResolvedToolFile);
         if (hasUsableTool)
@@ -895,7 +906,8 @@ int DL_RobotContext::loadRobotFromXml(const QString& theXmlFileName, QWidget* th
     }
     catch (const std::exception& e)
     {
-        clearRobotPresentation();
+        if (m_document != NULL) m_document->clearScene();
+        else clearSceneState();
         std::printf("加载机器人失败: %s\n", e.what());
         QMessageBox::warning(theParent, "Tips", QString("Load robot failed: %1").arg(e.what()));
         return 0;
@@ -924,14 +936,16 @@ int DL_RobotContext::loadRobot(const QString& theDirPath, QWidget* theParent)
 
     try
     {
-        clearRobotPresentation();
+        if (m_document != NULL) m_document->clearScene();
+        else clearSceneState();
         loadAll();
         if (!m_context.IsNull()) m_context->UpdateCurrentViewer();
         return DL_ROBOT_JOINT_COUNT;
     }
     catch (const std::exception& e)
     {
-        clearRobotPresentation();
+        if (m_document != NULL) m_document->clearScene();
+        else clearSceneState();
         std::printf("加载机器人失败: %s\n", e.what());
         QMessageBox::warning(theParent, "Tips", QString("Load robot failed: %1").arg(e.what()));
         return 0;
@@ -943,7 +957,8 @@ bool DL_RobotContext::previewStepFile(const QString& theFileName, QWidget* thePa
     if (m_context.IsNull() || theFileName.isEmpty()) return false;
 
     // 单 STEP 预览故意不初始化 RL 模型，只保留几何查看与后续拆分入口。
-    clearRobotPresentation();
+    if (m_document != NULL) m_document->clearScene();
+    else clearSceneState();
     m_toolFileName.clear();
     m_isToolEnabled = false;
     m_tfTCPDisplay = gp_Trsf();
@@ -963,6 +978,8 @@ bool DL_RobotContext::previewStepFile(const QString& theFileName, QWidget* thePa
 
     m_context->SetDisplayMode(aPreviewShape, 1, Standard_False);
     m_context->Display(aPreviewShape, Standard_False);
+    if (m_document != NULL)
+        m_document->registerSceneObject(DocumentTut::DL_STEP_PREVIEW, aPreviewShape);
     m_context->UpdateCurrentViewer();
     m_previewStepFileName = QFileInfo(theFileName).absoluteFilePath();
     m_robotDirPath = QFileInfo(theFileName).absolutePath();
@@ -1051,6 +1068,12 @@ bool DL_RobotContext::splitStepFile(const QString& theFileName)
 {
     if (m_context.IsNull() || theFileName.isEmpty()) return false;
 
+    if (m_document != NULL)
+    {
+        m_document->clearDynamicSceneObjects();
+        m_document->removeSceneObject(DocumentTut::DL_SPLIT_WHOLE);
+    }
+
     QString aFileName = theFileName;
     QString aSaveDir = QFileInfo(aFileName).absolutePath();
     STEPControl_Reader aReader;
@@ -1085,6 +1108,8 @@ bool DL_RobotContext::splitStepFile(const QString& theFileName)
             anAisPart->SetLocalTransformation(aTransform);
             m_context->SetDisplayMode(anAisPart, 1, Standard_False);
             m_context->Display(anAisPart, Standard_False);
+            if (m_document != NULL)
+                m_document->registerDynamicSceneObject(anAisPart);
             anOffset += 500.0;
             aBuilder.Add(aWholeCompound, aPart);
         }
@@ -1093,6 +1118,8 @@ bool DL_RobotContext::splitStepFile(const QString& theFileName)
     Handle(AIS_Shape) anAisWhole = new AIS_Shape(aWholeCompound);
     m_context->SetDisplayMode(anAisWhole, 1, Standard_False);
     m_context->Display(anAisWhole, Standard_True);
+    if (m_document != NULL)
+        m_document->registerSceneObject(DocumentTut::DL_SPLIT_WHOLE, anAisWhole);
     std::printf("--- 拆分显示完成 ---\n");
     return true;
 }
@@ -1107,7 +1134,14 @@ void DL_RobotContext::loadTool(const char* modelFileName, const gp_Trsf& theDisp
     if (m_ASTool.IsNull()) return;
     m_ASTool->SetLocalTransformation(theDisplayTransform);
     if (!m_listRods[DL_ROBOT_JOINT_COUNT].IsNull()) m_listRods[DL_ROBOT_JOINT_COUNT]->AddChildWithCurrentTransformation(m_ASTool);
-    if (!m_context.IsNull()) { m_context->SetDisplayMode(m_ASTool, 1, Standard_False); m_context->Display(m_ASTool, Standard_False); m_context->UpdateCurrentViewer(); }
+    if (!m_context.IsNull())
+    {
+        m_context->SetDisplayMode(m_ASTool, 1, Standard_False);
+        m_context->Display(m_ASTool, Standard_False);
+        if (m_document != NULL)
+            m_document->registerSceneObject(DocumentTut::DL_TOOL, m_ASTool);
+        m_context->UpdateCurrentViewer();
+    }
 }
 
 void DL_RobotContext::writeRobotXml(QWidget* theParent)
@@ -1356,3 +1390,4 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
 
     aDialog.exec();
 }
+
