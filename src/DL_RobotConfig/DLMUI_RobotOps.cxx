@@ -1,5 +1,6 @@
 #include "DL_RobotConfig\DLMUI_RobotOps.h"
 
+#include "DL_RobotConfig\DL_RobotCalcDialog.h"
 #include "DL_RobotConfig\DL_RobotContext.h"
 #include "DL_RobotConfig\DocumentTut.h"
 
@@ -298,8 +299,14 @@ void DLMUI_RobotOps::onRobotReset()
 void DLMUI_RobotOps::onRobotCalc()
 {
 	DocumentTut* aDocument = activeRobotDocument();
-	if (aDocument == NULL)
+	if (aDocument == NULL || aDocument->lastOpenResult() <= 0)
 		return;
 
-	aDocument->getRobot()->calcRobot();
+	if (myCalcDialog.isNull())
+		myCalcDialog = new DL_RobotCalcDialog(myAppMainWindow);
+
+	myCalcDialog->setDocument(aDocument);
+	myCalcDialog->show();
+	myCalcDialog->raise();
+	myCalcDialog->activateWindow();
 }

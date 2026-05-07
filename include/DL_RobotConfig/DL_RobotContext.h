@@ -31,6 +31,43 @@ class NloptInverseKinematics;
 
 #define DL_ROBOT_JOINT_COUNT 6
 
+struct DL_CartesianPose
+{
+    DL_CartesianPose()
+    : xMm(0.0), yMm(0.0), zMm(0.0), rxDeg(0.0), ryDeg(0.0), rzDeg(0.0)
+    {
+    }
+
+    double xMm;
+    double yMm;
+    double zMm;
+    double rxDeg;
+    double ryDeg;
+    double rzDeg;
+};
+
+struct DL_RobotCalcReport
+{
+    DL_RobotCalcReport()
+    : success(false), hasLimitWarning(false), hasMotionWarning(false)
+    {
+        for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
+        {
+            currentJointAngles[i] = 0.0;
+            solvedJointAngles[i] = 0.0;
+        }
+    }
+
+    bool             success;
+    bool             hasLimitWarning;
+    bool             hasMotionWarning;
+    DL_CartesianPose currentPose;
+    DL_CartesianPose targetPose;
+    double           currentJointAngles[DL_ROBOT_JOINT_COUNT];
+    double           solvedJointAngles[DL_ROBOT_JOINT_COUNT];
+    QString          summary;
+};
+
 //统一管理机器人在 OCC 显示层与 RL 运动学层之间的状态同步。
 class DL_RobotContext
 {
@@ -155,6 +192,16 @@ public:
     bool previewStepFile(const QString& theFileName, QWidget* theParent = nullptr);
     // 增量转动指定关节。
     void moveJoint(int theIndex, int theForward = 1);
+    // 返回当前末端/TCP 位姿，位置单位 mm，角度单位 degree。
+    DL_CartesianPose getCurrentTcpPose();
+    // 对目标笛卡尔位姿做逆解，输出关节角。
+    bool solveTargetPose(const DL_CartesianPose& thePose,
+                         double                  theAngles[DL_ROBOT_JOINT_COUNT],
+                         QString*                theMessage = nullptr);
+    // 分析目标位姿的逆解结果并给出摘要。
+    DL_RobotCalcReport analyzeTargetPose(const DL_CartesianPose& thePose);
+    // 按多关节同步插值动画移动到目标关节角。
+    bool animateToJoints(const double theTargetAngles[DL_ROBOT_JOINT_COUNT]);
     // 输出当前姿态下的正逆解验证信息。
     void calcRobot();
     // 将总装 STEP 按顶层子件拆分为多个 stp 文件。
@@ -185,6 +232,12 @@ private:
                                              const gp_Dir& theXAxis);
     // 在运行环境中查找示意图资源。
     static QString        findSampleImage(const char* theFileName);
+    // 将 RL 末端位姿转换为当前工程约定的 mm/degree 表示。
+    DL_CartesianPose      poseFromTransform(const rl::math::Transform& theTransform) const;
+    // 将当前工程约定的 mm/degree 位姿转换为 RL 变换。
+    rl::math::Transform   transformFromPose(const DL_CartesianPose& thePose) const;
+    // 生成计算摘要文本。
+    QString               buildCalcSummary(const DL_RobotCalcReport& theReport) const;
 
 private:
     DocumentTut* m_document;

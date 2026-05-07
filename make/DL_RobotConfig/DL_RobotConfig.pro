@@ -57,6 +57,9 @@ SOURCES	+= ../../src/DL_RobotConfig/DocumentTut.cxx
 HEADERS	+= ../../include/DL_RobotConfig/DLMUI_RobotOps.h
 SOURCES	+= ../../src/DL_RobotConfig/DLMUI_RobotOps.cxx
 
+HEADERS += ../../include/DL_RobotConfig/DL_RobotCalcDialog.h
+SOURCES += ../../src/DL_RobotConfig/DL_RobotCalcDialog.cxx
+
 HEADERS	+= ../../include/DL_RobotConfig/DL_RobotContext.h
 SOURCES	+= ../../src/DL_RobotConfig/robotContext.cxx
 #########################以上添加头文件和源文件############################ 

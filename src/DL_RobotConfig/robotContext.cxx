@@ -374,6 +374,95 @@ gp_Trsf DL_RobotContext::trans(const rl::math::Transform& theTransform) const
     return aTransform;
 }
 
+DL_CartesianPose DL_RobotContext::poseFromTransform(const rl::math::Transform& theTransform) const
+{
+    DL_CartesianPose aPose;
+    aPose.xMm = theTransform(0, 3) * 1000.0;
+    aPose.yMm = theTransform(1, 3) * 1000.0;
+    aPose.zMm = theTransform(2, 3) * 1000.0;
+
+    const double r00 = theTransform(0, 0);
+    const double r01 = theTransform(0, 1);
+    const double r10 = theTransform(1, 0);
+    const double r11 = theTransform(1, 1);
+    const double r20 = theTransform(2, 0);
+    const double r21 = theTransform(2, 1);
+    const double r22 = theTransform(2, 2);
+    const double aPitch = std::asin(std::max(-1.0, std::min(1.0, -r20)));
+    const double aCosPitch = std::cos(aPitch);
+    double aRoll = 0.0;
+    double aYaw = 0.0;
+    if (std::abs(aCosPitch) > 1.0e-6)
+    {
+        aRoll = std::atan2(r21, r22);
+        aYaw = std::atan2(r10, r00);
+    }
+    else
+    {
+        aRoll = 0.0;
+        aYaw = std::atan2(-r01, r11);
+    }
+
+    aPose.rxDeg = aRoll * rl::math::RAD2DEG;
+    aPose.ryDeg = aPitch * rl::math::RAD2DEG;
+    aPose.rzDeg = aYaw * rl::math::RAD2DEG;
+    return aPose;
+}
+
+rl::math::Transform DL_RobotContext::transformFromPose(const DL_CartesianPose& thePose) const
+{
+    return trans(buildTcpPoseTransform(thePose.xMm / 1000.0,
+                                       thePose.yMm / 1000.0,
+                                       thePose.zMm / 1000.0,
+                                       thePose.rxDeg,
+                                       thePose.ryDeg,
+                                       thePose.rzDeg));
+}
+
+QString DL_RobotContext::buildCalcSummary(const DL_RobotCalcReport& theReport) const
+{
+    QStringList aLines;
+    if (!theReport.success)
+    {
+        aLines << "Target pose is unreachable.";
+        if (!theReport.summary.isEmpty())
+            aLines << theReport.summary;
+        return aLines.join("\n");
+    }
+
+    aLines << "Target pose IK succeeded.";
+    aLines << QString("Current pose (mm/deg): X=%1, Y=%2, Z=%3, Rx=%4, Ry=%5, Rz=%6")
+              .arg(theReport.currentPose.xMm, 0, 'f', 3)
+              .arg(theReport.currentPose.yMm, 0, 'f', 3)
+              .arg(theReport.currentPose.zMm, 0, 'f', 3)
+              .arg(theReport.currentPose.rxDeg, 0, 'f', 3)
+              .arg(theReport.currentPose.ryDeg, 0, 'f', 3)
+              .arg(theReport.currentPose.rzDeg, 0, 'f', 3);
+    aLines << QString("Target pose (mm/deg): X=%1, Y=%2, Z=%3, Rx=%4, Ry=%5, Rz=%6")
+              .arg(theReport.targetPose.xMm, 0, 'f', 3)
+              .arg(theReport.targetPose.yMm, 0, 'f', 3)
+              .arg(theReport.targetPose.zMm, 0, 'f', 3)
+              .arg(theReport.targetPose.rxDeg, 0, 'f', 3)
+              .arg(theReport.targetPose.ryDeg, 0, 'f', 3)
+              .arg(theReport.targetPose.rzDeg, 0, 'f', 3);
+
+    QStringList aJointTexts;
+    for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
+    {
+        aJointTexts << QString("J%1=%2").arg(i + 1)
+                                          .arg(theReport.solvedJointAngles[i] * rl::math::RAD2DEG, 0, 'f', 3);
+    }
+    aLines << QString("Solved joints (deg): ") + aJointTexts.join(", ");
+
+    if (theReport.hasLimitWarning)
+        aLines << "Warning: at least one joint is within 5 deg of its limit.";
+    if (theReport.hasMotionWarning)
+        aLines << "Warning: at least one joint changes more than 45 deg from the current pose.";
+    if (!theReport.hasLimitWarning && !theReport.hasMotionWarning)
+        aLines << "No limit or large-motion warning was triggered.";
+    return aLines.join("\n");
+}
+
 void DL_RobotContext::loadMdlModel(const char* xmlFileName)
 {
     if (!xmlFileName || '\0' == xmlFileName[0]) throw std::runtime_error("robot.xml path is empty");
@@ -682,6 +771,122 @@ rl::math::Transform DL_RobotContext::forwardSolve(const double theAngles[], bool
     m_rl_mdl_KinematicModel->forwardPosition();
     aTransform = m_rl_mdl_KinematicModel->getOperationalPosition(0);
     return isToTcp ? aTransform * trans(m_tfTCP) : aTransform;
+}
+
+DL_CartesianPose DL_RobotContext::getCurrentTcpPose()
+{
+    if (!isLoaded()) return DL_CartesianPose();
+    const bool isUsingToolTcp = !m_ASTool.IsNull();
+    return poseFromTransform(forwardSolve(m_listJoints_angles, isUsingToolTcp));
+}
+
+bool DL_RobotContext::solveTargetPose(const DL_CartesianPose& thePose,
+                                      double                  theAngles[DL_ROBOT_JOINT_COUNT],
+                                      QString*                theMessage)
+{
+    if (!isLoaded() || !theAngles)
+    {
+        if (nullptr != theMessage) *theMessage = "Robot is not loaded.";
+        return false;
+    }
+
+    const bool isUsingToolTcp = !m_ASTool.IsNull();
+    if (!ikSolve(transformFromPose(thePose), theAngles, isUsingToolTcp))
+    {
+        if (nullptr != theMessage) *theMessage = "Target pose is unreachable.";
+        return false;
+    }
+
+    if (nullptr != theMessage) *theMessage = "Target pose IK succeeded.";
+    return true;
+}
+
+DL_RobotCalcReport DL_RobotContext::analyzeTargetPose(const DL_CartesianPose& thePose)
+{
+    DL_RobotCalcReport aReport;
+    aReport.currentPose = getCurrentTcpPose();
+    aReport.targetPose = thePose;
+    for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
+        aReport.currentJointAngles[i] = m_listJoints_angles[i];
+
+    if (!isLoaded())
+    {
+        aReport.summary = "Robot is not loaded.";
+        return aReport;
+    }
+
+    QString aMessage;
+    if (!solveTargetPose(thePose, aReport.solvedJointAngles, &aMessage))
+    {
+        aReport.summary = aMessage;
+        return aReport;
+    }
+
+    aReport.success = true;
+    const double aLimitWarningThreshold = 5.0 * rl::math::DEG2RAD;
+    const double aMotionWarningThreshold = 45.0 * rl::math::DEG2RAD;
+    const std::size_t dof = m_rl_mdl_KinematicModel->getDof();
+    for (std::size_t i = 0; i < dof && i < DL_ROBOT_JOINT_COUNT; ++i)
+    {
+        const rl::mdl::Joint* aJoint = m_rl_mdl_KinematicModel->getJoint(i);
+        const double aSolvedAngle = aReport.solvedJointAngles[i];
+        const double aCurrentAngle = aReport.currentJointAngles[i];
+        if (std::abs(aSolvedAngle - aJoint->min(0)) < aLimitWarningThreshold ||
+            std::abs(aJoint->max(0) - aSolvedAngle) < aLimitWarningThreshold)
+        {
+            aReport.hasLimitWarning = true;
+        }
+
+        if (std::abs(aSolvedAngle - aCurrentAngle) > aMotionWarningThreshold)
+            aReport.hasMotionWarning = true;
+    }
+
+    aReport.summary = buildCalcSummary(aReport);
+    return aReport;
+}
+
+bool DL_RobotContext::animateToJoints(const double theTargetAngles[DL_ROBOT_JOINT_COUNT])
+{
+    if (!isLoaded() || !theTargetAngles) return false;
+
+    const double aSnapThreshold = 0.1 * rl::math::DEG2RAD;
+    bool hasVisibleMotion = false;
+    double aStartAngles[DL_ROBOT_JOINT_COUNT] = {0.0};
+    CubicPolynomial aPolynomials[DL_ROBOT_JOINT_COUNT];
+    for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
+    {
+        aStartAngles[i] = m_listJoints_angles[i];
+        aPolynomials[i] = buildJointCubicPolynomial(aStartAngles[i], theTargetAngles[i], 600.0);
+        if (std::abs(theTargetAngles[i] - aStartAngles[i]) > aSnapThreshold)
+            hasVisibleMotion = true;
+    }
+
+    if (!hasVisibleMotion)
+    {
+        for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
+            m_listJoints_angles[i] = theTargetAngles[i];
+        forwardRobot();
+        if (!m_context.IsNull()) m_context->UpdateCurrentViewer();
+        return true;
+    }
+
+    const int aDurationMs = 600;
+    const int aSampleMs = 20;
+    for (int aElapsedMs = 0; aElapsedMs <= aDurationMs; aElapsedMs += aSampleMs)
+    {
+        for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
+            m_listJoints_angles[i] = aPolynomials[i].value(static_cast<double>(aElapsedMs));
+        forwardRobot();
+        if (!m_context.IsNull()) m_context->UpdateCurrentViewer();
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
+        if (aElapsedMs < aDurationMs) QThread::msleep(aSampleMs);
+    }
+
+    for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
+        m_listJoints_angles[i] = theTargetAngles[i];
+    forwardRobot();
+    if (!m_context.IsNull()) m_context->UpdateCurrentViewer();
+    return true;
 }
 
 int DL_RobotContext::loadRobotDynamic(QWidget* theParent)
@@ -1017,36 +1222,35 @@ void DL_RobotContext::calcRobot()
     std::size_t dof = m_rl_mdl_KinematicModel->getDof();
 
     // 这里主要用于验证“当前显示姿态”与“RL 正逆解结果”是否保持一致。
-    std::cout << "================ 关节限位（单位：度） ================" << std::endl;
+    std::cout << "================ Joint Limits (deg) ================" << std::endl;
     for (std::size_t i = 0; i < dof; ++i)
     {
         const rl::mdl::Joint* aJoint = m_rl_mdl_KinematicModel->getJoint(i);
-        std::cout << "Joint " << i << ": min = " << aJoint->min(0) * rl::math::RAD2DEG << " °, max = " << aJoint->max(0) * rl::math::RAD2DEG << " °" << std::endl;
+        std::cout << "Joint " << i << ": min = " << aJoint->min(0) * rl::math::RAD2DEG << " deg, max = " << aJoint->max(0) * rl::math::RAD2DEG << " deg" << std::endl;
     }
     std::cout << "=====================================================" << std::endl;
 
     rl::math::Vector q(dof), qinv(dof);
     for (std::size_t i = 0; i < dof; ++i) q(i) = m_listJoints_angles[i];
     const bool isUsingToolTcp = !m_ASTool.IsNull();
+    DL_CartesianPose aCurrentPose = getCurrentTcpPose();
+    DL_RobotCalcReport aReport = analyzeTargetPose(aCurrentPose);
+    std::cout << aReport.summary.toLocal8Bit().constData() << std::endl;
     rl::math::Transform t = forwardSolve(m_listJoints_angles, isUsingToolTcp);
-    std::cout << "rl依据xml计算末端坐标 (X,Y,Z): " << t.translation().x() << ", " << t.translation().y() << ", " << t.translation().z() << std::endl;
+    std::cout << "RL TCP position from XML (X,Y,Z): " << t.translation().x() << ", " << t.translation().y() << ", " << t.translation().z() << std::endl;
 
     gp_Pnt aWorldPoint = m_endTrihedron->Component()->Location().Transformed(m_endTrihedron->Transformation());
-    std::cout << "OCC 真实末端坐标 (X,Y,Z): " << aWorldPoint.X() << ", " << aWorldPoint.Y() << ", " << aWorldPoint.Z() << std::endl;
+    std::cout << "OCC displayed TCP position (X,Y,Z): " << aWorldPoint.X() << ", " << aWorldPoint.Y() << ", " << aWorldPoint.Z() << std::endl;
 
-    double aAngles[DL_ROBOT_JOINT_COUNT] = {0.0};
-    if (!ikSolve(t, aAngles, isUsingToolTcp)) { std::printf("错误：逆解计算失败，无法到达目标位姿。\n"); return; }
+    if (!aReport.success) return;
 
-    for (std::size_t i = 0; i < dof; ++i) { m_listJoints_angles[i] = aAngles[i]; qinv(i) = aAngles[i]; }
-    forwardRobot();
-    if (!m_context.IsNull()) m_context->UpdateCurrentViewer();
-
-    rl::math::Transform tinv = forwardSolve(m_listJoints_angles, isUsingToolTcp);
-    std::cout << "================ 正逆解一致性验证 ================" << std::endl;
-    std::cout << "初始目标关节角 (q):    " << q.transpose() << std::endl;
-    std::cout << "逆解计算关节角 (qinv): " << qinv.transpose() << std::endl;
-    std::cout << "\n正解矩阵 (t):\n" << t.matrix() << std::endl;
-    std::cout << "\n逆解矩阵 (tinv):\n" << tinv.matrix() << std::endl;
+    for (std::size_t i = 0; i < dof; ++i) qinv(i) = aReport.solvedJointAngles[i];
+    rl::math::Transform tinv = forwardSolve(aReport.solvedJointAngles, isUsingToolTcp);
+    std::cout << "================ FK / IK Consistency ================" << std::endl;
+    std::cout << "Current joints (q):    " << q.transpose() << std::endl;
+    std::cout << "Solved joints (qinv):  " << qinv.transpose() << std::endl;
+    std::cout << "\nForward matrix (t):\n" << t.matrix() << std::endl;
+    std::cout << "\nIK forward matrix (tinv):\n" << tinv.matrix() << std::endl;
 }
 
 void DL_RobotContext::disasRobot(QWidget* theParent)

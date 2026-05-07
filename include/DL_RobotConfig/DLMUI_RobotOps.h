@@ -3,8 +3,11 @@
 
 #include "dlOcctMdiFrame\DLModuleUIEntry.h"
 
+#include <QPointer>
+
 class DocumentCommon;
 class DocumentTut;
+class DL_RobotCalcDialog;
 class QMenu;
 
 class DLMUI_RobotOps : public DLModuleUIEntry
@@ -49,6 +52,9 @@ private:
 	RobotUiState stateForDocument(DocumentTut* theDocument) const;
 	void         syncDocumentUi(DocumentTut* theDocument);
 	void         showCurrentJointStatus(DocumentTut* theDocument);
+
+private:
+	QPointer<DL_RobotCalcDialog> myCalcDialog;
 
 public slots:
 	void onFileOpen();
