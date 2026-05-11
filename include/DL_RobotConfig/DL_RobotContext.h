@@ -198,6 +198,11 @@ public:
     bool solveTargetPose(const DL_CartesianPose& thePose,
                          double                  theAngles[DL_ROBOT_JOINT_COUNT],
                          QString*                theMessage = nullptr);
+    // 在关节限位内随机采样一组姿态，再正解生成目标位姿，并用当前 IK 流程做一次可达性验证。
+    bool sampleRandomJointTarget(DL_CartesianPose& thePose,
+                                 double            theSampledAngles[DL_ROBOT_JOINT_COUNT],
+                                 double            theSolvedAngles[DL_ROBOT_JOINT_COUNT],
+                                 QString*          theMessage = nullptr);
     // 分析目标位姿的逆解结果并给出摘要。
     DL_RobotCalcReport analyzeTargetPose(const DL_CartesianPose& thePose);
     // 按多关节同步插值动画移动到目标关节角。

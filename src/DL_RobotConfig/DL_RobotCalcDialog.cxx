@@ -2,6 +2,8 @@
 
 #include "DL_RobotConfig/DocumentTut.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdio>
 
 #include <QDoubleSpinBox>
@@ -29,16 +31,19 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
   myResultEdit(nullptr),
   myReadCurrentButton(nullptr),
   myRandomButton(nullptr),
+  myRandomJointButton(nullptr),
   mySolveButton(nullptr),
   myAnimateButton(nullptr),
   myAnalyzeButton(nullptr),
   myHasSolvedTarget(false),
+  myHasSampledJointTarget(false),
   myRandomEngine(std::random_device()())
 {
     for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
     {
         myCurrentJointEdits[i] = nullptr;
         mySolvedAngles[i] = 0.0;
+        mySampledJointAngles[i] = 0.0;
     }
 
     for (int i = 0; i < 6; ++i)
@@ -91,6 +96,7 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
         myTargetPoseEdits[i]->setSingleStep(i < 3 ? 10.0 : 1.0);
         aTargetLayout->addWidget(aLabel, i / 3, (i % 3) * 2);
         aTargetLayout->addWidget(myTargetPoseEdits[i], i / 3, (i % 3) * 2 + 1);
+        connect(myTargetPoseEdits[i], QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &DL_RobotCalcDialog::onTargetPoseEdited);
     }
     aMainLayout->addWidget(aTargetGroup);
 
@@ -115,12 +121,14 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
     QHBoxLayout* aButtonLayout = new QHBoxLayout();
     myReadCurrentButton = new QPushButton("Read Current Pose");
     myRandomButton = new QPushButton("Random XYZ");
+    myRandomJointButton = new QPushButton("Random Joint Sample");
     mySolveButton = new QPushButton("Solve IK");
     myAnimateButton = new QPushButton("Animate To Target");
     myAnalyzeButton = new QPushButton("Analyze Current Pose");
     QPushButton* aCloseButton = new QPushButton("Close");
     aButtonLayout->addWidget(myReadCurrentButton);
     aButtonLayout->addWidget(myRandomButton);
+    aButtonLayout->addWidget(myRandomJointButton);
     aButtonLayout->addWidget(mySolveButton);
     aButtonLayout->addWidget(myAnimateButton);
     aButtonLayout->addWidget(myAnalyzeButton);
@@ -138,6 +146,7 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
 
     connect(myReadCurrentButton, SIGNAL(clicked()), this, SLOT(refreshFromCurrentPose()));
     connect(myRandomButton, SIGNAL(clicked()), this, SLOT(randomizeTargetPose()));
+    connect(myRandomJointButton, SIGNAL(clicked()), this, SLOT(randomizeJointTarget()));
     connect(mySolveButton, SIGNAL(clicked()), this, SLOT(onSolveTargetPose()));
     connect(myAnimateButton, SIGNAL(clicked()), this, SLOT(animateToTargetPose()));
     connect(myAnalyzeButton, SIGNAL(clicked()), this, SLOT(analyzeCurrentPose()));
@@ -161,6 +170,7 @@ void DL_RobotCalcDialog::setDocument(DocumentTut* theDocument)
 
     myDocument = theDocument;
     myHasSolvedTarget = false;
+    myHasSampledJointTarget = false;
     if (myDocument)
         myDocumentDestroyedConnection = connect(myDocument.data(), SIGNAL(destroyed(QObject*)), this, SLOT(onDocumentDestroyed()));
 
@@ -189,6 +199,7 @@ void DL_RobotCalcDialog::refreshFromCurrentPose()
     setPoseEditors(myTargetPoseEdits, aPose);
     setDefaultRandomRanges(aPose);
     myHasSolvedTarget = false;
+    myHasSampledJointTarget = false;
     setResultText("Current pose loaded.");
     updateUiEnabledState();
 }
@@ -237,6 +248,41 @@ void DL_RobotCalcDialog::randomizeTargetPose()
     }
 
     setResultText(aFailureMessage);
+}
+
+void DL_RobotCalcDialog::randomizeJointTarget()
+{
+    QString aMessage;
+    if (!hasValidDocument(&aMessage))
+    {
+        setResultText(aMessage);
+        return;
+    }
+
+    DL_RobotContext* aRobot = robotContext();
+    DL_CartesianPose aPose;
+    double aSampledAngles[DL_ROBOT_JOINT_COUNT] = {0.0};
+    double aSolvedAngles[DL_ROBOT_JOINT_COUNT] = {0.0};
+    if (!aRobot->sampleRandomJointTarget(aPose, aSampledAngles, aSolvedAngles, &aMessage))
+    {
+        myHasSolvedTarget = false;
+        myHasSampledJointTarget = false;
+        setResultText(aMessage);
+        updateUiEnabledState();
+        return;
+    }
+
+    setPoseEditors(myTargetPoseEdits, aPose);
+    cacheSampledAngles(aSampledAngles);
+    cacheSolvedAngles(aSolvedAngles);
+
+    QStringList aLines;
+    aLines << aMessage;
+    aLines << "Target pose was generated from FK of a random joint sample.";
+    aLines << sampledJointComparisonText(aSolvedAngles);
+    aLines << "You can run Solve IK again or animate directly.";
+    setResultText(aLines.join("\n"));
+    updateUiEnabledState();
 }
 
 void DL_RobotCalcDialog::onSolveTargetPose()
@@ -313,7 +359,15 @@ void DL_RobotCalcDialog::onDocumentDestroyed()
 {
     myDocument = nullptr;
     myHasSolvedTarget = false;
+    myHasSampledJointTarget = false;
     setResultText("Current document was closed. Please reopen a robot document.");
+    updateUiEnabledState();
+}
+
+void DL_RobotCalcDialog::onTargetPoseEdited()
+{
+    myHasSolvedTarget = false;
+    myHasSampledJointTarget = false;
     updateUiEnabledState();
 }
 
@@ -415,6 +469,7 @@ void DL_RobotCalcDialog::updateUiEnabledState()
     const bool isReady = hasValidDocument(&aMessage);
     myReadCurrentButton->setEnabled(isReady);
     myRandomButton->setEnabled(isReady);
+    myRandomJointButton->setEnabled(isReady);
     mySolveButton->setEnabled(isReady);
     myAnimateButton->setEnabled(isReady);
     myAnalyzeButton->setEnabled(isReady);
@@ -436,6 +491,8 @@ bool DL_RobotCalcDialog::solveCurrentTarget(DL_RobotCalcReport* theReport)
 
     DL_CartesianPose aPose = poseFromEditors(myTargetPoseEdits);
     DL_RobotCalcReport aReport = robotContext()->analyzeTargetPose(aPose);
+    if (aReport.success && myHasSampledJointTarget)
+        aReport.summary += QString("\n\n") + sampledJointComparisonText(aReport.solvedJointAngles);
     if (theReport)
         *theReport = aReport;
 
@@ -453,6 +510,38 @@ void DL_RobotCalcDialog::cacheSolvedAngles(const double theAngles[DL_ROBOT_JOINT
     for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
         mySolvedAngles[i] = theAngles[i];
     myHasSolvedTarget = true;
+}
+
+void DL_RobotCalcDialog::cacheSampledAngles(const double theAngles[DL_ROBOT_JOINT_COUNT])
+{
+    for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
+        mySampledJointAngles[i] = theAngles[i];
+    myHasSampledJointTarget = true;
+}
+
+QString DL_RobotCalcDialog::sampledJointComparisonText(const double theSolvedAngles[DL_ROBOT_JOINT_COUNT]) const
+{
+    if (!myHasSampledJointTarget)
+        return QString();
+
+    QStringList aSampleTexts;
+    QStringList aDeltaTexts;
+    double aMaxDeltaDeg = 0.0;
+    for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
+    {
+        const double aSampleDeg = mySampledJointAngles[i] * rl::math::RAD2DEG;
+        const double aSolvedDeg = theSolvedAngles[i] * rl::math::RAD2DEG;
+        const double aDeltaDeg = std::abs(aSolvedDeg - aSampleDeg);
+        aMaxDeltaDeg = std::max(aMaxDeltaDeg, aDeltaDeg);
+        aSampleTexts << QString("J%1=%2").arg(i + 1).arg(aSampleDeg, 0, 'f', 3);
+        aDeltaTexts << QString("dJ%1=%2").arg(i + 1).arg(aDeltaDeg, 0, 'f', 3);
+    }
+
+    QStringList aLines;
+    aLines << QString("Sampled joints (deg): ") + aSampleTexts.join(", ");
+    aLines << QString("Sampled-vs-IK delta (deg): ") + aDeltaTexts.join(", ");
+    aLines << QString("Max sampled-vs-IK delta (deg): %1").arg(aMaxDeltaDeg, 0, 'f', 3);
+    return aLines.join("\n");
 }
 
 

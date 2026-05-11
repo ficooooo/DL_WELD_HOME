@@ -1,4 +1,4 @@
-#ifndef DLMUI_ROBOTOPS_H
+﻿#ifndef DLMUI_ROBOTOPS_H
 #define DLMUI_ROBOTOPS_H
 
 #include "dlOcctMdiFrame\DLModuleUIEntry.h"

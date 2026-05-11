@@ -12,7 +12,8 @@ class ApplicationTut: public ApplicationCommonWindow
 public:
 	enum DLModuleUIEntryIdsX
 	{
-		DLMUI_RobotOpsId = DLMUI_Count
+		DLMUI_RobotImportOpsId = DLMUI_Count,
+		DLMUI_RobotControlOpsId
 	};
 
 public:

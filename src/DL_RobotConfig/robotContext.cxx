@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <iostream>
+#include <random>
 #include <stdexcept>
 
 #include <AIS_ListOfInteractive.hxx>
@@ -799,6 +800,58 @@ bool DL_RobotContext::solveTargetPose(const DL_CartesianPose& thePose,
 
     if (nullptr != theMessage) *theMessage = "Target pose IK succeeded.";
     return true;
+}
+
+bool DL_RobotContext::sampleRandomJointTarget(DL_CartesianPose& thePose,
+                                              double            theSampledAngles[DL_ROBOT_JOINT_COUNT],
+                                              double            theSolvedAngles[DL_ROBOT_JOINT_COUNT],
+                                              QString*          theMessage)
+{
+    if (!isLoaded() || !theSampledAngles || !theSolvedAngles)
+    {
+        if (nullptr != theMessage) *theMessage = "Robot is not loaded.";
+        return false;
+    }
+
+    static thread_local std::mt19937 aRandomEngine(std::random_device{}());
+    const std::size_t dof = m_rl_mdl_KinematicModel->getDof();
+    const bool isUsingToolTcp = !m_ASTool.IsNull();
+    const double aLimitMargin = 5.0 * rl::math::DEG2RAD;
+
+    QString aFailureMessage = "No solvable target pose found from random joint sampling.";
+    for (int aAttempt = 0; aAttempt < 20; ++aAttempt)
+    {
+        for (std::size_t i = 0; i < dof && i < DL_ROBOT_JOINT_COUNT; ++i)
+        {
+            const rl::mdl::Joint* aJoint = m_rl_mdl_KinematicModel->getJoint(i);
+            double aMin = aJoint->min(0) + aLimitMargin;
+            double aMax = aJoint->max(0) - aLimitMargin;
+            if (aMin > aMax)
+            {
+                aMin = aJoint->min(0);
+                aMax = aJoint->max(0);
+            }
+
+            std::uniform_real_distribution<double> aDistribution(aMin, aMax);
+            theSampledAngles[i] = aDistribution(aRandomEngine);
+        }
+
+        rl::math::Transform aTransform = forwardSolve(theSampledAngles, isUsingToolTcp);
+        thePose = poseFromTransform(aTransform);
+
+        // 参考 RL 官方逆解测试：先关节随机，再正解得到目标位姿。
+        // 这里额外按当前工程自己的 IK 工作流再做一次验证，确保对话框里生成的目标
+        // 不仅“理论可达”，也“能按当前 seed 策略求出来”。
+        if (solveTargetPose(thePose, theSolvedAngles, &aFailureMessage))
+        {
+            if (nullptr != theMessage)
+                *theMessage = QString("Random joint sample succeeded after %1 attempt(s).").arg(aAttempt + 1);
+            return true;
+        }
+    }
+
+    if (nullptr != theMessage) *theMessage = aFailureMessage;
+    return false;
 }
 
 DL_RobotCalcReport DL_RobotContext::analyzeTargetPose(const DL_CartesianPose& thePose)

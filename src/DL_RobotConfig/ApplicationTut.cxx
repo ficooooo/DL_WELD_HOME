@@ -1,6 +1,7 @@
 #include "DL_RobotConfig\ApplicationTut.h"
 #include "DL_RobotConfig\DocumentTut.h"
-#include "DL_RobotConfig\DLMUI_RobotOps.h"
+#include "DL_RobotConfig\DLMUI_RobotControlOps.h"
+#include "DL_RobotConfig\DLMUI_RobotImportOps.h"
 
 #include "dlOcctMdiFrame\DLMUI_BackgroundSet.h"
 #include "dlOcctMdiFrame\DLMUI_FileWnd.h"
@@ -21,7 +22,8 @@ ApplicationTut::ApplicationTut()
 	new DLMUI_ModelSkin(this, DLMUI_ModelSkinId);
 	new DLMUI_Raytrace(this, DLMUI_RaytraceId);
 	new DLMUI_BackgroundSet(this, DLMUI_BackgroundSetId);
-	new DLMUI_RobotOps(this, DLMUI_RobotOpsId);
+	new DLMUI_RobotImportOps(this, DLMUI_RobotImportOpsId);
+	new DLMUI_RobotControlOps(this, DLMUI_RobotControlOpsId);
 
 	DLModuleUIEntry::transMap2List();
 
