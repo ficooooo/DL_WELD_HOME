@@ -55,12 +55,12 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
 
     setAttribute(Qt::WA_DeleteOnClose, true);
     setModal(false);
-    setWindowTitle("Robot Calc");
+    setWindowTitle(QObject::tr("Robot Calc"));
     resize(780, 620);
 
     QVBoxLayout* aMainLayout = new QVBoxLayout(this);
 
-    QGroupBox* aCurrentGroup = new QGroupBox("Current State");
+    QGroupBox* aCurrentGroup = new QGroupBox(QObject::tr("Current State"));
     QGridLayout* aCurrentLayout = new QGridLayout(aCurrentGroup);
     QStringList aJointLabels = QStringList() << "J1(deg)" << "J2(deg)" << "J3(deg)"
                                              << "J4(deg)" << "J5(deg)" << "J6(deg)";
@@ -84,7 +84,7 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
     }
     aMainLayout->addWidget(aCurrentGroup);
 
-    QGroupBox* aTargetGroup = new QGroupBox("Target Pose");
+    QGroupBox* aTargetGroup = new QGroupBox(QObject::tr("Target Pose"));
     QGridLayout* aTargetLayout = new QGridLayout(aTargetGroup);
     for (int i = 0; i < 6; ++i)
     {
@@ -100,11 +100,11 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
     }
     aMainLayout->addWidget(aTargetGroup);
 
-    QGroupBox* aRangeGroup = new QGroupBox("Random Range");
+    QGroupBox* aRangeGroup = new QGroupBox(QObject::tr("Random Range"));
     QGridLayout* aRangeLayout = new QGridLayout(aRangeGroup);
-    QStringList aRangeLabels = QStringList() << "X min(mm)" << "X max(mm)"
-                                             << "Y min(mm)" << "Y max(mm)"
-                                             << "Z min(mm)" << "Z max(mm)";
+    QStringList aRangeLabels = QStringList() << QObject::tr("X min(mm)") << QObject::tr("X max(mm)")
+                                             << QObject::tr("Y min(mm)") << QObject::tr("Y max(mm)")
+                                             << QObject::tr("Z min(mm)") << QObject::tr("Z max(mm)");
     for (int i = 0; i < 6; ++i)
     {
         QLabel* aLabel = new QLabel(aRangeLabels[i]);
@@ -119,13 +119,13 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
     aMainLayout->addWidget(aRangeGroup);
 
     QHBoxLayout* aButtonLayout = new QHBoxLayout();
-    myReadCurrentButton = new QPushButton("Read Current Pose");
-    myRandomButton = new QPushButton("Random XYZ");
-    myRandomJointButton = new QPushButton("Random Joint Sample");
-    mySolveButton = new QPushButton("Solve IK");
-    myAnimateButton = new QPushButton("Animate To Target");
-    myAnalyzeButton = new QPushButton("Analyze Current Pose");
-    QPushButton* aCloseButton = new QPushButton("Close");
+    myReadCurrentButton = new QPushButton(QObject::tr("Read Current Pose"));
+    myRandomButton = new QPushButton(QObject::tr("Random XYZ"));
+    myRandomJointButton = new QPushButton(QObject::tr("Random Joint Sample"));
+    mySolveButton = new QPushButton(QObject::tr("Solve IK"));
+    myAnimateButton = new QPushButton(QObject::tr("Animate To Target"));
+    myAnalyzeButton = new QPushButton(QObject::tr("Analyze Current Pose"));
+    QPushButton* aCloseButton = new QPushButton(QObject::tr("Close"));
     aButtonLayout->addWidget(myReadCurrentButton);
     aButtonLayout->addWidget(myRandomButton);
     aButtonLayout->addWidget(myRandomJointButton);
@@ -136,7 +136,7 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
     aButtonLayout->addWidget(aCloseButton);
     aMainLayout->addLayout(aButtonLayout);
 
-    QGroupBox* aResultGroup = new QGroupBox("Result Summary");
+    QGroupBox* aResultGroup = new QGroupBox(QObject::tr("Result Summary"));
     QVBoxLayout* aResultLayout = new QVBoxLayout(aResultGroup);
     myResultEdit = new QPlainTextEdit();
     myResultEdit->setReadOnly(true);
@@ -152,7 +152,7 @@ DL_RobotCalcDialog::DL_RobotCalcDialog(QWidget* theParent)
     connect(myAnalyzeButton, SIGNAL(clicked()), this, SLOT(analyzeCurrentPose()));
     connect(aCloseButton, SIGNAL(clicked()), this, SLOT(close()));
 
-    setResultText("Please open a loaded robot document first.");
+    setResultText(QObject::tr("Please open a loaded robot document first."));
     updateUiEnabledState();
 }
 
@@ -178,7 +178,7 @@ void DL_RobotCalcDialog::setDocument(DocumentTut* theDocument)
     if (myDocument)
         refreshFromCurrentPose();
     else
-        setResultText("Current document is invalid. Please reopen a robot document.");
+        setResultText(QObject::tr("Current document is invalid. Please reopen a robot document."));
 }
 
 void DL_RobotCalcDialog::refreshFromCurrentPose()
@@ -200,7 +200,7 @@ void DL_RobotCalcDialog::refreshFromCurrentPose()
     setDefaultRandomRanges(aPose);
     myHasSolvedTarget = false;
     myHasSampledJointTarget = false;
-    setResultText("Current pose loaded.");
+    setResultText(QObject::tr("Current pose loaded."));
     updateUiEnabledState();
 }
 
@@ -221,7 +221,7 @@ void DL_RobotCalcDialog::randomizeTargetPose()
     const double aZMax = myRandomRangeEdits[5]->value();
     if (aXMin > aXMax || aYMin > aYMax || aZMin > aZMax)
     {
-        setResultText("Invalid random range: each min must be less than or equal to max.");
+        setResultText(QObject::tr("Invalid random range: each min must be less than or equal to max."));
         return;
     }
 
@@ -230,7 +230,7 @@ void DL_RobotCalcDialog::randomizeTargetPose()
     std::uniform_real_distribution<double> aRandY(aYMin, aYMax);
     std::uniform_real_distribution<double> aRandZ(aZMin, aZMax);
     DL_RobotContext* aRobot = robotContext();
-    QString aFailureMessage = "No reachable pose found inside the current random range.";
+    QString aFailureMessage = QObject::tr("No reachable pose found inside the current random range.");
     double aSolvedAngles[DL_ROBOT_JOINT_COUNT] = {0.0};
     for (int aAttempt = 0; aAttempt < 20; ++aAttempt)
     {
@@ -242,7 +242,7 @@ void DL_RobotCalcDialog::randomizeTargetPose()
         {
             setPoseEditors(myTargetPoseEdits, aCandidate);
             myHasSolvedTarget = false;
-            setResultText("A reachable random target was generated. Run IK or animate to target.");
+            setResultText(QObject::tr("A reachable random target was generated. Run IK or animate to target."));
             return;
         }
     }
@@ -278,9 +278,9 @@ void DL_RobotCalcDialog::randomizeJointTarget()
 
     QStringList aLines;
     aLines << aMessage;
-    aLines << "Target pose was generated from FK of a random joint sample.";
+    aLines << QObject::tr("Target pose was generated from FK of a random joint sample.");
     aLines << sampledJointComparisonText(aSolvedAngles);
-    aLines << "You can run Solve IK again or animate directly.";
+    aLines << QObject::tr("You can run Solve IK again or animate directly.");
     setResultText(aLines.join("\n"));
     updateUiEnabledState();
 }
@@ -322,7 +322,7 @@ void DL_RobotCalcDialog::animateToTargetPose()
     DL_RobotContext* aRobot = robotContext();
     if (!aRobot->animateToJoints(mySolvedAngles))
     {
-        setResultText(myResultEdit->toPlainText() + "\n\nAnimation failed.");
+        setResultText(myResultEdit->toPlainText() + "\n\n" + QObject::tr("Animation failed."));
         return;
     }
 
@@ -330,7 +330,7 @@ void DL_RobotCalcDialog::animateToTargetPose()
     DL_CartesianPose aPose = aRobot->getCurrentTcpPose();
     setCurrentJointEditors(aAngles);
     setCurrentPoseEditors(aPose);
-    setResultText(myResultEdit->toPlainText() + "\n\nAnimation completed.");
+    setResultText(myResultEdit->toPlainText() + "\n\n" + QObject::tr("Animation completed."));
 }
 
 void DL_RobotCalcDialog::analyzeCurrentPose()
@@ -360,7 +360,7 @@ void DL_RobotCalcDialog::onDocumentDestroyed()
     myDocument = nullptr;
     myHasSolvedTarget = false;
     myHasSampledJointTarget = false;
-    setResultText("Current document was closed. Please reopen a robot document.");
+    setResultText(QObject::tr("Current document was closed. Please reopen a robot document."));
     updateUiEnabledState();
 }
 
@@ -375,20 +375,20 @@ bool DL_RobotCalcDialog::hasValidDocument(QString* theMessage) const
 {
     if (myDocument.isNull())
     {
-        if (theMessage) *theMessage = "No active robot document is available.";
+        if (theMessage) *theMessage = QObject::tr("No active robot document is available.");
         return false;
     }
 
     if (myDocument->lastOpenResult() <= 0)
     {
-        if (theMessage) *theMessage = "The current document has no loaded robot.";
+        if (theMessage) *theMessage = QObject::tr("The current document has no loaded robot.");
         return false;
     }
 
     DL_RobotContext* aRobot = myDocument->getRobot();
     if (nullptr == aRobot || !aRobot->isLoaded())
     {
-        if (theMessage) *theMessage = "Robot context is unavailable.";
+        if (theMessage) *theMessage = QObject::tr("Robot context is unavailable.");
         return false;
     }
 
@@ -538,9 +538,9 @@ QString DL_RobotCalcDialog::sampledJointComparisonText(const double theSolvedAng
     }
 
     QStringList aLines;
-    aLines << QString("Sampled joints (deg): ") + aSampleTexts.join(", ");
-    aLines << QString("Sampled-vs-IK delta (deg): ") + aDeltaTexts.join(", ");
-    aLines << QString("Max sampled-vs-IK delta (deg): %1").arg(aMaxDeltaDeg, 0, 'f', 3);
+    aLines << QObject::tr("Sampled joints (deg): %1").arg(aSampleTexts.join(", "));
+    aLines << QObject::tr("Sampled-vs-IK delta (deg): %1").arg(aDeltaTexts.join(", "));
+    aLines << QObject::tr("Max sampled-vs-IK delta (deg): %1").arg(aMaxDeltaDeg, 0, 'f', 3);
     return aLines.join("\n");
 }
 

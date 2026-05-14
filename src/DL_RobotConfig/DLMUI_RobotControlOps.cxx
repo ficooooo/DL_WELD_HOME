@@ -24,7 +24,7 @@ void DLMUI_RobotControlOps::create()
 	QString aDir = myAppMainWindow->getResourceDir() + QString("/");
 	QAction* anAction = NULL;
 
-	myToolBar = myAppMainWindow->addToolBar(tr("Robot Control Operations"));
+	myToolBar = myAppMainWindow->addToolBar(QObject::tr("Robot Control Operations"));
 
 #define ROBOT_CONTROL_ACTION(MAPID, ICON_ID, TEXT_ID, TIP_ID, SHORTCUT_TEXT, SLOT_NAME) \
 	anAction = new QAction(QPixmap(aDir + QObject::tr(ICON_ID)), QObject::tr(TEXT_ID), this); \

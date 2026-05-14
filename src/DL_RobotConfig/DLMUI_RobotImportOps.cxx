@@ -26,7 +26,7 @@ void DLMUI_RobotImportOps::create()
 	QString aDir = myAppMainWindow->getResourceDir() + QString("/");
 	QAction* anAction = NULL;
 
-	myToolBar = myAppMainWindow->addToolBar(tr("Robot Import Operations"));
+	myToolBar = myAppMainWindow->addToolBar(QObject::tr("Robot Import Operations"));
 
 #define ROBOT_MENU_ACTION(MAPID, ICON_ID, TEXT_ID, TIP_ID, SHORTCUT_TEXT, SLOT_NAME) \
 	anAction = new QAction(QPixmap(aDir + QObject::tr(ICON_ID)), QObject::tr(TEXT_ID), this); \
@@ -101,7 +101,7 @@ void DLMUI_RobotImportOps::onFileOpen()
 	DocumentTut* aDocument = ensureRobotDocument();
 	if (aDocument == NULL)
 	{
-		QMessageBox::warning(myAppMainWindow, "Tips", "Please create an OCC 3D window first.");
+		QMessageBox::warning(myAppMainWindow, QObject::tr("Tips"), QObject::tr("Please create an OCC 3D window first."));
 		return;
 	}
 
@@ -119,7 +119,7 @@ void DLMUI_RobotImportOps::onFileOpen()
 	{
 		aDocument->setCurrentJointIndex(-1);
 		refreshRobotUi();
-		myAppMainWindow->statusBar()->showMessage("Single STEP preview loaded. Disassemble and Write XML are enabled.", 5000);
+		myAppMainWindow->statusBar()->showMessage(QObject::tr("Single STEP preview loaded. Disassemble and Write XML are enabled."), 5000);
 		return;
 	}
 
@@ -132,7 +132,7 @@ void DLMUI_RobotImportOps::onRobotDisas()
 	DocumentTut* aDocument = activeRobotDocument();
 	if (aDocument == NULL)
 	{
-		QMessageBox::warning(myAppMainWindow, "Tips", "Please open an OCC 3D window first.");
+		QMessageBox::warning(myAppMainWindow, QObject::tr("Tips"), QObject::tr("Please open an OCC 3D window first."));
 		return;
 	}
 

@@ -76,9 +76,10 @@ void DLMUI_RobotModuleBase::showCurrentJointStatus(DocumentTut* theDocument)
 	const int aJointIndex = theDocument->currentJointIndex();
 	if (aJointCount > 0 && aJointIndex >= 0 && aJointIndex < aJointCount)
 	{
-		myAppMainWindow->statusBar()->showMessage(QString("Current Joint: J#") +
-		                                          QString::number(aJointIndex + 1) +
-		                                          " of " + QString::number(aJointCount));
+		myAppMainWindow->statusBar()->showMessage(
+			QObject::tr("Current Joint: J#%1 of %2")
+				.arg(aJointIndex + 1)
+				.arg(aJointCount));
 	}
 }
 

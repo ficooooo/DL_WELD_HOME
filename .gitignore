@@ -36,3 +36,10 @@
 # Autosaves and temporary files
 *.autosave
 ~$*
+
+# Generated documents and local scratch files
+/docs/*.docx
+/tmp_*.txt
+/scripts/generate_calc_notes_cn_docx.py
+**/__pycache__/
+**/*.pyc

@@ -301,6 +301,11 @@ CubicPolynomial buildJointCubicPolynomial(const double theStartAngle,
     return aPolynomial;
 }
 
+QString trObj(const char* theSourceText)
+{
+    return QCoreApplication::translate("QObject", theSourceText);
+}
+
 int rodSceneId(const int theIndex)
 {
     return DocumentTut::DL_ROD_0 + theIndex;
@@ -425,21 +430,21 @@ QString DL_RobotContext::buildCalcSummary(const DL_RobotCalcReport& theReport) c
     QStringList aLines;
     if (!theReport.success)
     {
-        aLines << "Target pose is unreachable.";
+        aLines << trObj("Target pose is unreachable.");
         if (!theReport.summary.isEmpty())
             aLines << theReport.summary;
         return aLines.join("\n");
     }
 
-    aLines << "Target pose IK succeeded.";
-    aLines << QString("Current pose (mm/deg): X=%1, Y=%2, Z=%3, Rx=%4, Ry=%5, Rz=%6")
+    aLines << trObj("Target pose IK succeeded.");
+    aLines << trObj("Current pose (mm/deg): X=%1, Y=%2, Z=%3, Rx=%4, Ry=%5, Rz=%6")
               .arg(theReport.currentPose.xMm, 0, 'f', 3)
               .arg(theReport.currentPose.yMm, 0, 'f', 3)
               .arg(theReport.currentPose.zMm, 0, 'f', 3)
               .arg(theReport.currentPose.rxDeg, 0, 'f', 3)
               .arg(theReport.currentPose.ryDeg, 0, 'f', 3)
               .arg(theReport.currentPose.rzDeg, 0, 'f', 3);
-    aLines << QString("Target pose (mm/deg): X=%1, Y=%2, Z=%3, Rx=%4, Ry=%5, Rz=%6")
+    aLines << trObj("Target pose (mm/deg): X=%1, Y=%2, Z=%3, Rx=%4, Ry=%5, Rz=%6")
               .arg(theReport.targetPose.xMm, 0, 'f', 3)
               .arg(theReport.targetPose.yMm, 0, 'f', 3)
               .arg(theReport.targetPose.zMm, 0, 'f', 3)
@@ -453,14 +458,14 @@ QString DL_RobotContext::buildCalcSummary(const DL_RobotCalcReport& theReport) c
         aJointTexts << QString("J%1=%2").arg(i + 1)
                                           .arg(theReport.solvedJointAngles[i] * rl::math::RAD2DEG, 0, 'f', 3);
     }
-    aLines << QString("Solved joints (deg): ") + aJointTexts.join(", ");
+    aLines << trObj("Solved joints (deg): %1").arg(aJointTexts.join(", "));
 
     if (theReport.hasLimitWarning)
-        aLines << "Warning: at least one joint is within 5 deg of its limit.";
+        aLines << trObj("Warning: at least one joint is within 5 deg of its limit.");
     if (theReport.hasMotionWarning)
-        aLines << "Warning: at least one joint changes more than 45 deg from the current pose.";
+        aLines << trObj("Warning: at least one joint changes more than 45 deg from the current pose.");
     if (!theReport.hasLimitWarning && !theReport.hasMotionWarning)
-        aLines << "No limit or large-motion warning was triggered.";
+        aLines << trObj("No limit or large-motion warning was triggered.");
     return aLines.join("\n");
 }
 
@@ -787,18 +792,18 @@ bool DL_RobotContext::solveTargetPose(const DL_CartesianPose& thePose,
 {
     if (!isLoaded() || !theAngles)
     {
-        if (nullptr != theMessage) *theMessage = "Robot is not loaded.";
+        if (nullptr != theMessage) *theMessage = trObj("Robot is not loaded.");
         return false;
     }
 
     const bool isUsingToolTcp = !m_ASTool.IsNull();
     if (!ikSolve(transformFromPose(thePose), theAngles, isUsingToolTcp))
     {
-        if (nullptr != theMessage) *theMessage = "Target pose is unreachable.";
+        if (nullptr != theMessage) *theMessage = trObj("Target pose is unreachable.");
         return false;
     }
 
-    if (nullptr != theMessage) *theMessage = "Target pose IK succeeded.";
+    if (nullptr != theMessage) *theMessage = trObj("Target pose IK succeeded.");
     return true;
 }
 
@@ -809,7 +814,7 @@ bool DL_RobotContext::sampleRandomJointTarget(DL_CartesianPose& thePose,
 {
     if (!isLoaded() || !theSampledAngles || !theSolvedAngles)
     {
-        if (nullptr != theMessage) *theMessage = "Robot is not loaded.";
+        if (nullptr != theMessage) *theMessage = trObj("Robot is not loaded.");
         return false;
     }
 
@@ -818,7 +823,7 @@ bool DL_RobotContext::sampleRandomJointTarget(DL_CartesianPose& thePose,
     const bool isUsingToolTcp = !m_ASTool.IsNull();
     const double aLimitMargin = 5.0 * rl::math::DEG2RAD;
 
-    QString aFailureMessage = "No solvable target pose found from random joint sampling.";
+    QString aFailureMessage = trObj("No solvable target pose found from random joint sampling.");
     for (int aAttempt = 0; aAttempt < 20; ++aAttempt)
     {
         for (std::size_t i = 0; i < dof && i < DL_ROBOT_JOINT_COUNT; ++i)
@@ -845,7 +850,7 @@ bool DL_RobotContext::sampleRandomJointTarget(DL_CartesianPose& thePose,
         if (solveTargetPose(thePose, theSolvedAngles, &aFailureMessage))
         {
             if (nullptr != theMessage)
-                *theMessage = QString("Random joint sample succeeded after %1 attempt(s).").arg(aAttempt + 1);
+                *theMessage = trObj("Random joint sample succeeded after %1 attempt(s).").arg(aAttempt + 1);
             return true;
         }
     }
@@ -864,7 +869,7 @@ DL_RobotCalcReport DL_RobotContext::analyzeTargetPose(const DL_CartesianPose& th
 
     if (!isLoaded())
     {
-        aReport.summary = "Robot is not loaded.";
+        aReport.summary = trObj("Robot is not loaded.");
         return aReport;
     }
 
@@ -955,9 +960,9 @@ int DL_RobotContext::loadRobotDynamic(QWidget* theParent)
         aStartPath = m_robotXmlFileName.isEmpty() ? m_robotDirPath : m_robotXmlFileName;
     QString aFileName = QFileDialog::getOpenFileName(
         theParent,
-        "Choose Top.xml or STEP file",
+        trObj("Choose Top.xml or STEP file"),
         aStartPath,
-        "Top XML (*.xml);;STEP Files (*.stp *.step)");
+        trObj("Top XML (*.xml);;STEP Files (*.stp *.step)"));
     if (aFileName.isEmpty()) return 0;
 
     QFileInfo aInfo(aFileName);
@@ -974,7 +979,7 @@ int DL_RobotContext::loadRobotDynamic(QWidget* theParent)
         return previewStepFile(aFileName, theParent) ? -1 : 0;
     }
 
-    QMessageBox::warning(theParent, "Tips", "Please choose a Top XML file or a STEP file.");
+    QMessageBox::warning(theParent, trObj("Tips"), trObj("Please choose a Top XML file or a STEP file."));
     return 0;
 }
 
@@ -987,7 +992,7 @@ int DL_RobotContext::loadRobotFromXml(const QString& theXmlFileName, QWidget* th
     QFile aTopFile(aInfo.absoluteFilePath());
     if (!aTopFile.open(QIODevice::ReadOnly | QIODevice::Text))
     {
-        QMessageBox::warning(theParent, "Tips", QString("Can not open Top.xml:\n%1").arg(aInfo.absoluteFilePath()));
+        QMessageBox::warning(theParent, trObj("Tips"), trObj("Can not open Top.xml:\n%1").arg(aInfo.absoluteFilePath()));
         return 0;
     }
 
@@ -995,7 +1000,7 @@ int DL_RobotContext::loadRobotFromXml(const QString& theXmlFileName, QWidget* th
     if (!aTopDocument.setContent(&aTopFile))
     {
         aTopFile.close();
-        QMessageBox::warning(theParent, "Tips", "Top.xml parse failed.");
+        QMessageBox::warning(theParent, trObj("Tips"), trObj("Top.xml parse failed."));
         return 0;
     }
     aTopFile.close();
@@ -1003,7 +1008,7 @@ int DL_RobotContext::loadRobotFromXml(const QString& theXmlFileName, QWidget* th
     QDomElement aRoot = aTopDocument.documentElement();
     if (aRoot.tagName() != "Top")
     {
-        QMessageBox::warning(theParent, "Tips", "Please choose a valid Top.xml file.");
+        QMessageBox::warning(theParent, trObj("Tips"), trObj("Please choose a valid Top.xml file."));
         return 0;
     }
 
@@ -1123,14 +1128,14 @@ int DL_RobotContext::loadRobotFromXml(const QString& theXmlFileName, QWidget* th
                                aSpeedVals,
                                aRobotDocument))
     {
-        QMessageBox::warning(theParent, "Tips", "Can not build robot.xml from Top.xml.");
+        QMessageBox::warning(theParent, trObj("Tips"), trObj("Can not build robot.xml from Top.xml."));
         return 0;
     }
 
     QString anErrorMessage;
     if (!saveXmlDocument(aRobotDocument, m_robotXmlFileName, &anErrorMessage))
     {
-        QMessageBox::warning(theParent, "Tips", anErrorMessage);
+        QMessageBox::warning(theParent, trObj("Tips"), anErrorMessage);
         return 0;
     }
     m_robotXmlDocument = aRobotDocument;
@@ -1167,7 +1172,7 @@ int DL_RobotContext::loadRobotFromXml(const QString& theXmlFileName, QWidget* th
         if (m_document != NULL) m_document->clearScene();
         else clearSceneState();
         std::printf("加载机器人失败: %s\n", e.what());
-        QMessageBox::warning(theParent, "Tips", QString("Load robot failed: %1").arg(e.what()));
+        QMessageBox::warning(theParent, trObj("Tips"), trObj("Load robot failed: %1").arg(e.what()));
         return 0;
     }
 }
@@ -1190,7 +1195,7 @@ int DL_RobotContext::loadRobot(const QString& theDirPath, QWidget* theParent)
         m_rodNames[i].clear();
         m_rodFileNames[i].clear();
     }
-    if (!loadRobotXml()) { std::printf("错误：缺失或无法解析 robot.xml 文件。\n"); QMessageBox::warning(theParent, "Tips", "robot.xml missing or invalid."); return 0; }
+    if (!loadRobotXml()) { std::printf("错误：缺失或无法解析 robot.xml 文件。\n"); QMessageBox::warning(theParent, trObj("Tips"), trObj("robot.xml missing or invalid.")); return 0; }
 
     try
     {
@@ -1205,7 +1210,7 @@ int DL_RobotContext::loadRobot(const QString& theDirPath, QWidget* theParent)
         if (m_document != NULL) m_document->clearScene();
         else clearSceneState();
         std::printf("加载机器人失败: %s\n", e.what());
-        QMessageBox::warning(theParent, "Tips", QString("Load robot failed: %1").arg(e.what()));
+        QMessageBox::warning(theParent, trObj("Tips"), trObj("Load robot failed: %1").arg(e.what()));
         return 0;
     }
 }
@@ -1230,7 +1235,7 @@ bool DL_RobotContext::previewStepFile(const QString& theFileName, QWidget* thePa
     Handle(AIS_Shape) aPreviewShape = loadStp(theFileName.toLocal8Bit().constData());
     if (aPreviewShape.IsNull())
     {
-        QMessageBox::warning(theParent, "Tips", "Load STEP preview failed.");
+        QMessageBox::warning(theParent, trObj("Tips"), trObj("Load STEP preview failed."));
         return false;
     }
 
@@ -1315,7 +1320,7 @@ void DL_RobotContext::disasRobot(QWidget* theParent)
     if (aFileName.isEmpty() || !QFileInfo::exists(aFileName))
     {
         QString aStartPath = !m_previewStepFileName.isEmpty() ? m_previewStepFileName : m_robotDirPath;
-        aFileName = QFileDialog::getOpenFileName(theParent, "choose stp or step", aStartPath, "STEP Files (*.stp *.step)");
+        aFileName = QFileDialog::getOpenFileName(theParent, trObj("Choose stp or step"), aStartPath, trObj("STEP Files (*.stp *.step)"));
     }
     if (aFileName.isEmpty()) return;
     splitStepFile(aFileName);
@@ -1404,7 +1409,7 @@ void DL_RobotContext::loadTool(const char* modelFileName, const gp_Trsf& theDisp
 void DL_RobotContext::writeRobotXml(QWidget* theParent)
 {
     QDialog aDialog(theParent);
-    aDialog.setWindowTitle("Write Robot Xml");
+    aDialog.setWindowTitle(trObj("Write Robot Xml"));
     QHBoxLayout* aMainLayout = new QHBoxLayout(&aDialog);
 
     QVBoxLayout* aLeftLayout = new QVBoxLayout();
@@ -1418,8 +1423,8 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
         else aImageLabel->setPixmap(QPixmap(aPath).scaled(350, 450, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     };
 
-    QRadioButton* aPose1Button = new QRadioButton("Case1:Straight (W in X)");
-    QRadioButton* aPose2Button = new QRadioButton("Case2:Bend (W in Z)");
+    QRadioButton* aPose1Button = new QRadioButton(trObj("Case1:Straight (W in X)"));
+    QRadioButton* aPose2Button = new QRadioButton(trObj("Case2:Bend (W in Z)"));
     aPose1Button->setChecked(true);
     updateImage(true);
     QObject::connect(aPose1Button, &QRadioButton::toggled, [&updateImage](bool checked) { updateImage(checked); });
@@ -1437,8 +1442,8 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
     QLineEdit* aModelEdit = new QLineEdit("HSR-CR630-1750");
     aManufacturerEdit->setAlignment(Qt::AlignCenter);
     aModelEdit->setAlignment(Qt::AlignCenter);
-    QLabel* aManufacturerLabel = new QLabel("Manufacturer");
-    QLabel* aModelLabel = new QLabel("Model");
+    QLabel* aManufacturerLabel = new QLabel(trObj("Manufacturer"));
+    QLabel* aModelLabel = new QLabel(trObj("Model"));
     aManufacturerLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     aModelLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     aGrid->addWidget(aManufacturerLabel, 0, 0);
@@ -1447,8 +1452,8 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
     aGrid->addWidget(aModelEdit, 1, 1, 1, 6);
 
     QLineEdit* aTcpEdits[6] = {nullptr};
-    QStringList aTcpLabels = QStringList() << "Tcp X(mm)" << "Tcp Y(mm)" << "Tcp Z(mm)"
-                                           << "Tcp Rx(Degree)" << "Tcp Ry(Degree)" << "Tcp Rz(Degree)";
+    QStringList aTcpLabels = QStringList() << trObj("Tcp X(mm)") << trObj("Tcp Y(mm)") << trObj("Tcp Z(mm)")
+                                           << trObj("Tcp Rx(Degree)") << trObj("Tcp Ry(Degree)") << trObj("Tcp Rz(Degree)");
     for (int i = 0; i < 6; ++i)
     {
         const int aRow = 2 + i / 3;
@@ -1475,9 +1480,9 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
     }
     aGrid->setColumnMinimumWidth(2, 20);
 
-    QLabel* aMinTitle = new QLabel("Min(Degree)");
-    QLabel* aMaxTitle = new QLabel("Max(Degree)");
-    QLabel* aSpeedTitle = new QLabel("MaxSpeed");
+    QLabel* aMinTitle = new QLabel(trObj("Min(Degree)"));
+    QLabel* aMaxTitle = new QLabel(trObj("Max(Degree)"));
+    QLabel* aSpeedTitle = new QLabel(trObj("MaxSpeed"));
     aMinTitle->setAlignment(Qt::AlignCenter);
     aMaxTitle->setAlignment(Qt::AlignCenter);
     aSpeedTitle->setAlignment(Qt::AlignCenter);
@@ -1491,7 +1496,7 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
     QStringList aSpeedDefaults = QStringList() << "187" << "160" << "180" << "260" << "230" << "360";
     for (int i = 0; i < DL_ROBOT_JOINT_COUNT; ++i)
     {
-        QLabel* aJointLabel = new QLabel(QString("Joint %1:").arg(i));
+        QLabel* aJointLabel = new QLabel(trObj("Joint %1:").arg(i));
         aJointLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         aGrid->addWidget(aJointLabel, i + 5, 3);
 
@@ -1506,7 +1511,7 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
         aGrid->addWidget(aSpeedEdits[i], i + 5, 6);
     }
 
-    QPushButton* aCreateButton = new QPushButton("Create Top.xml + robot.xml");
+    QPushButton* aCreateButton = new QPushButton(trObj("Create Top.xml + robot.xml"));
     aGrid->addWidget(aCreateButton, 11, 0, 1, 7);
     aMainLayout->addLayout(aGrid);
 
@@ -1514,7 +1519,7 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
     {
         // 表单只维护一份输入，再同时输出 Top.xml 与 robot.xml，避免两份配置手工同步。
         bool isPose1 = aPose1Button->isChecked();
-        QString aSavePath = QFileDialog::getExistingDirectory(&aDialog, "Save to...");
+        QString aSavePath = QFileDialog::getExistingDirectory(&aDialog, trObj("Save to..."));
         if (aSavePath.isEmpty()) return;
 
         QStringList aDimensions;
@@ -1549,7 +1554,7 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
                                    aSpeedVals,
                                    aRobotDocument))
         {
-            QMessageBox::warning(&aDialog, "Tips", "robot.xml build failed.");
+            QMessageBox::warning(&aDialog, trObj("Tips"), trObj("robot.xml build failed."));
             return;
         }
 
@@ -1632,16 +1637,16 @@ void DL_RobotContext::writeRobotXml(QWidget* theParent)
         QString anErrorMessage;
         if (!saveXmlDocument(aRobotDocument, QDir(aSavePath).filePath("robot.xml"), &anErrorMessage))
         {
-            QMessageBox::warning(&aDialog, "Tips", anErrorMessage);
+            QMessageBox::warning(&aDialog, trObj("Tips"), anErrorMessage);
             return;
         }
         if (!saveXmlDocument(aTopDocument, QDir(aSavePath).filePath("Top.xml"), &anErrorMessage))
         {
-            QMessageBox::warning(&aDialog, "Tips", anErrorMessage);
+            QMessageBox::warning(&aDialog, trObj("Tips"), anErrorMessage);
             return;
         }
 
-        QMessageBox::information(&aDialog, "Done", "Top.xml and robot.xml created!");
+        QMessageBox::information(&aDialog, trObj("Done"), trObj("Top.xml and robot.xml created!"));
         aDialog.accept();
     });
 
